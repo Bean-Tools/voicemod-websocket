@@ -80,7 +80,7 @@ voicemod.on('ClientRegistered', () => {
 
       // Comment this out if you want to test listening to events instead of
       // closing the connection at the end of the script
-      voicemod.disconnect();
+      //voicemod.disconnect();
     });
   });
 });
