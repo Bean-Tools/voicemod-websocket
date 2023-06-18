@@ -1,0 +1,45 @@
+{
+  "name": "voicemod-websocket",
+  "version": "0.0.1",
+  "description": "Websocket implementation for the Voicemod Control API",
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "node_modules",
+    "src/test/config.ts",
+    "src/test/config.js"
+  ],
+  "exports": {
+    "voicemod-websocket/": "./src/"
+  },
+  "typings": "./src/websocket.d.ts",
+  "types": "./src/websocket.d.ts",
+  "homepage": "https://github.com/Bean-Tools/voicemod-websocket",
+  "repository": "https://github.com/Bean-Tools/voicemod-websocket.git",
+  "bugs": "https://github.com/Bean-Tools/voicemod-websocket/issues",
+  "author": "Izzy <360964+izzy@users.noreply.github.com>",
+  "contributors": [],
+  "keywords": [
+    "voicemod",
+    "websocket",
+    "api"
+  ],
+  "readmeFilename": "README.md",
+  "license": "GPL-3.0+",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "test": "ts-node --preferTsExts ./src/test/test.ts"
+  },
+  "dependencies": {
+    "@types/node": "^20.3.1",
+    "eventemitter3": "^5.0.1",
+    "ws": "^8.13.0"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.5.5",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.1.3"
+  }
+}
