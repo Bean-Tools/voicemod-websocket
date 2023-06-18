@@ -9,7 +9,7 @@ export type MapValueToArgsArray<T extends Record<string, unknown>> = {
 // in terms of return types, so this is really just a best effort, not
 // a complete implementation
 
-export type VoicemodVoice = {
+export type Voice = {
   id: string;
   friendlyName: string;
   enabled: boolean;
@@ -19,36 +19,36 @@ export type VoicemodVoice = {
   bitmapChecksum: string;
 };
 
-export type VoicemodVoiceParameter = {
+export type VoiceParameter = {
   [key: string]: { [key: string]: any };
 };
 
-export type VoicemodVoiceParameterValue = {
+export type VoiceParameterValue = {
   value?: number;
   min?: number;
   max?: number;
   displayNormalized?: boolean;
 };
 
-export type VoicemodResponseGetVoices = {
+export type ResponseGetVoices = {
   id: string;
   actionType: 'getVoices';
   actionObject: {
-    voices: VoicemodVoice[];
+    voices: Voice[];
     currentVoice: string;
   };
 };
 
-export type VoicemodResponseGetCurrentVoice = {
+export type ResponseGetCurrentVoice = {
   id: string;
   actionType: 'getCurrentVoice';
   actionObject: {
     voiceID: string;
-    parameters: VoicemodVoiceParameter[];
+    parameters: VoiceParameter[];
   };
 };
 
-export type VoicemodResponseMuteMicStatus = {
+export type ResponseMuteMicStatus = {
   actionType: 'toggleMuteMic';
   appVersion: string;
   actionID: string;
@@ -57,21 +57,21 @@ export type VoicemodResponseMuteMicStatus = {
   };
 };
 
-export type VoicemodResponseGetUser = {
+export type ResponseGetUser = {
   actionType: 'getUser';
   actionObject: {
     userId: string;
   };
 };
 
-export type VoicemodMessageEvent = {
+export type MessageEvent = {
   actionType: keyof EventTypes;
   actionID: string;
   actionObject?: any;
   msg?: string;
-} & VoicemodRegisterClientResponse;
+} & RegisterClientResponse;
 
-export type VoicemodRegisterClientResponse = {
+export type RegisterClientResponse = {
   action: string;
   id: string;
   payload: {
@@ -82,36 +82,36 @@ export type VoicemodRegisterClientResponse = {
   };
 };
 
-export type VoicemodMessageRequest = {
+export type MessageRequest = {
   action: string;
   id: string;
   // TODO: Specify deeper
   payload: any;
 };
 
-export type VoicemodLoadVoicePayload = {
+export type LoadVoicePayload = {
   voiceID: string;
   parameterName?: string;
   parameterValue?: string;
 };
 
-export type VoicemodLicenseType = 'free' | 'pro';
+export type LicenseType = 'free' | 'pro';
 
-export type VoicemodResponseGetUserLicense = {
+export type ResponseGetUserLicense = {
   actionType: 'getUserLicense';
   actionObject: {
-    licenseType: VoicemodLicenseType;
+    licenseType: LicenseType;
   };
 };
 
-export type VoicemodResponseGetRotatoryVoicesRemainingTime = {
+export type ResponseGetRotatoryVoicesRemainingTime = {
   actionType: 'getRotatoryVoicesRemainingTime';
   actionObject: {
     remainingTime: number;
   };
 };
 
-export type VoicemodSoundboardSound = {
+export type SoundboardSound = {
   id: string;
   name: string;
   isCustom: boolean;
@@ -125,65 +125,65 @@ export type VoicemodSoundboardSound = {
   bitmapChecksum: string;
 };
 
-export type VoicemodSoundboard = {
+export type Soundboard = {
   id: string;
   name: string;
   isCustom: boolean;
   enabled: boolean;
   showProLogo: boolean;
-  sounds: VoicemodSoundboardSound[];
+  sounds: SoundboardSound[];
 };
 
-export type VoicemodResponseGetAllSoundboard = {
+export type ResponseGetAllSoundboard = {
   actionType: 'getAllSoundboard';
   actionObject: {
-    soundboards: VoicemodSoundboard[];
+    soundboards: Soundboard[];
   };
 };
 
-export type VoicemodResponseGetActiveSoundboard = {
+export type ResponseGetActiveSoundboard = {
   actionType: 'getActiveSoundboard';
   actionObject: {
     profileId: string;
   };
 };
 
-export type VoicemodMemeType =
+export type MemeType =
   | 'PlayRestart'
   | 'PlayPause'
   | 'PlayStop'
   | 'PlayOverlap'
   | 'PlayLoopOnPress';
 
-export type VoicemodMeme = {
+export type Meme = {
   Name: string;
   FileName: string;
-  Type: VoicemodMemeType;
+  Type: MemeType;
   Image: string;
 };
 
-export type VoicemodResponseGetMemes = {
+export type ResponseGetMemes = {
   actionType: 'getMemes';
   actionObject: {
-    memes: VoicemodMeme[];
+    memes: Meme[];
   };
 };
 
-export type VoicemodBitmap = {
+export type Bitmap = {
   default: string;
   selected: string;
   transparent: string;
 };
 
-export type VoicemodResponseGetBitmap = {
+export type ResponseGetBitmap = {
   actionType: 'getBitmap';
   actionID: string;
   appVersion: string;
   context: string;
-  actionObject: VoicemodBitmap;
+  actionObject: Bitmap;
 };
 
-export type VoicemodResponseToggleHearMyself = {
+export type ResponseToggleHearMyself = {
   actionType: 'toggleHearMyself';
   appVersion: string;
   actionId: string;
@@ -192,7 +192,7 @@ export type VoicemodResponseToggleHearMyself = {
   };
 };
 
-export type VoicemodResponseToggleVoiceChanger = {
+export type ResponseToggleVoiceChanger = {
   actionType: 'toggleVoiceChanger';
   appVersion: string;
   actionId: string;
@@ -201,16 +201,16 @@ export type VoicemodResponseToggleVoiceChanger = {
   };
 };
 
-export type VoicemodResponseVoiceParameter = {
+export type ResponseVoiceParameter = {
   voiceID: string;
-  parameters: VoicemodVoiceParameter[];
+  parameters: VoiceParameter[];
 };
 
-export type VoicemodresponseSetCurrentVoiceParameter = {
+export type ResponseSetCurrentVoiceParameter = {
   actionType: 'setCurrentVoiceParameter';
   appVersion: string;
   actionID: string;
-  actionObject: VoicemodResponseVoiceParameter;
+  actionObject: ResponseVoiceParameter;
 };
 
 export type EventTypes = {
@@ -225,20 +225,20 @@ export type EventTypes = {
   Connected: void;
   Disconnected: void;
 
-  ClientRegistered: VoicemodRegisterClientResponse;
+  ClientRegistered: RegisterClientResponse;
   ClientRegistrationFailed: void;
   ClientRegistrationPending: void;
 
   UserChanged: string;
   UserLicenseChanged: string;
 
-  VoiceChanged: VoicemodVoice;
-  VoiceListChanged: VoicemodVoice[];
-  VoiceParameterChanged: VoicemodResponseVoiceParameter;
+  VoiceChanged: Voice;
+  VoiceListChanged: Voice[];
+  VoiceParameterChanged: ResponseVoiceParameter;
   VoiceChangerStatusChanged: boolean;
 
-  MemeListChanged: VoicemodMeme[];
-  SoundboardListChanged: VoicemodSoundboard[];
+  MemeListChanged: Meme[];
+  SoundboardListChanged: Soundboard[];
 
   HearMyselfStatusChanged: boolean;
   BackgroundEffectStatusChanged: boolean;
@@ -247,7 +247,7 @@ export type EventTypes = {
   BadLanguageStatusChanged: boolean;
 };
 
-export type VoicemodSelectVoiceMode =
+export type SelectVoiceMode =
   | 'AllVoices'
   | 'FreeVoices'
   | 'FavoriteVoices'

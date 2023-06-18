@@ -11,31 +11,71 @@ import {
 import EventEmitter from 'eventemitter3';
 
 import {
-  VoicemodMessageEvent,
-  VoicemodRegisterClientResponse,
-  VoicemodVoice,
+  MessageEvent,
+  RegisterClientResponse,
+  Voice,
   EventTypes,
-  VoicemodResponseGetVoices,
-  VoicemodResponseGetCurrentVoice,
-  VoicemodResponseMuteMicStatus,
+  ResponseGetVoices,
+  ResponseGetCurrentVoice,
+  ResponseMuteMicStatus,
   MapValueToArgsArray,
-  VoicemodSelectVoiceMode,
-  VoicemodResponseGetUser,
-  VoicemodLicenseType,
-  VoicemodResponseGetUserLicense,
-  VoicemodResponseGetRotatoryVoicesRemainingTime,
-  VoicemodResponseGetAllSoundboard,
-  VoicemodSoundboard,
-  VoicemodResponseGetActiveSoundboard,
-  VoicemodMeme,
-  VoicemodResponseGetMemes,
-  VoicemodBitmap,
-  VoicemodResponseToggleHearMyself,
-  VoicemodResponseToggleVoiceChanger,
-  VoicemodresponseSetCurrentVoiceParameter,
-  VoicemodLoadVoicePayload,
-  VoicemodVoiceParameterValue,
+  SelectVoiceMode,
+  ResponseGetUser,
+  LicenseType,
+  ResponseGetUserLicense,
+  ResponseGetRotatoryVoicesRemainingTime,
+  ResponseGetAllSoundboard,
+  Soundboard,
+  ResponseGetActiveSoundboard,
+  Meme,
+  ResponseGetMemes,
+  Bitmap,
+  ResponseToggleHearMyself,
+  ResponseToggleVoiceChanger,
+  ResponseSetCurrentVoiceParameter,
+  LoadVoicePayload,
+  VoiceParameterValue,
 } from './types';
+
+/**
+   * List of possible ports to connect to. These are necessary
+   * because the Voicemod API does not have one single, fixed
+   * port, but rather a range of ports where one *might* be open.
+   *
+   * Yeah. That look on your face? That's the same look I had.
+   *
+   * @type {number[]}
+   * @private
+   */
+const possible_ports = [
+  59129, 20000, 39273, 42152, 43782, 46667, 35679, 37170, 38501, 33952, 30546,
+];
+
+const action_map: { [key: string]: keyof EventTypes } = {
+  ConnectionOpened: 'ConnectionOpened',
+  ConnectionClosed: 'ConnectionClosed',
+  ConnectionError: 'ConnectionError',
+
+  ClientRegistered: 'ClientRegistered',
+  ClientRegistrationFailed: 'ClientRegistrationFailed',
+  ClientRegistrationPending: 'ClientRegistrationPending',
+
+  UserChanged: 'UserChanged',
+  UserLicenseChanged: 'UserLicenseChanged',
+
+  VoiceChanged: 'VoiceChanged',
+  VoiceListChanged: 'VoiceListChanged',
+  VoiceChangerStatusChanged: 'VoiceChangerStatusChanged',
+  VoiceParameterChanged: 'VoiceParameterChanged',
+
+  HearMyselfStatusChanged: 'HearMyselfStatusChanged',
+  BackgroundEffectStatusChanged: 'BackgroundEffectStatusChanged',
+  MuteMicStatusChanged: 'MuteMicStatusChanged',
+  BadLanguageStatusChanged: 'BadLanguageStatusChanged',
+
+  SoundboardListChanged: 'SoundboardListChanged',
+  MemeListChanged: 'MemeListChanged',
+};
 
 /**
  * Voicemod WebSocket
@@ -75,33 +115,19 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
   private internal_events = new EventEmitter();
   private connected: boolean;
 
-  /**
-   * List of possible ports to connect to. These are necessary
-   * because the Voicemod API does not have one single, fixed
-   * port, but rather a range of ports where one *might* be open.
-   *
-   * Yeah. That look on your face? That's the same look I had.
-   *
-   * @type {number[]}
-   * @private
-   */
-  private possible_ports = [
-    59129, 20000, 39273, 42152, 43782, 46667, 35679, 37170, 38501, 33952, 30546,
-  ];
-
   private reconnect: boolean;
-  private reconnect_timeout: number = 5000;
+  private reconnect_timeout: number;
 
   private current_voice: null | string = null;
-  private voiceList: null | VoicemodVoice[] = null;
+  private voiceList: null | Voice[] = null;
 
   private user: null | string = null;
-  private userLicense: null | VoicemodLicenseType = null;
+  private userLicense: null | LicenseType = null;
 
-  private soundboards: null | VoicemodSoundboard[] = null;
+  private soundboards: null | Soundboard[] = null;
   private activeSoundboard: null | string = null;
 
-  private memes: null | VoicemodMeme[] = null;
+  private memes: null | Meme[] = null;
 
   private hear_myself_status: null | boolean = null;
   private voice_changer_status: null | boolean = null;
@@ -109,39 +135,14 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
   private mute_meme_for_me_status: null | boolean = null;
   private mute_mic_status: null | boolean = null;
 
-  private action_map: { [key: string]: keyof EventTypes } = {
-    ConnectionOpened: 'ConnectionOpened',
-    ConnectionClosed: 'ConnectionClosed',
-    ConnectionError: 'ConnectionError',
-
-    ClientRegistered: 'ClientRegistered',
-    ClientRegistrationFailed: 'ClientRegistrationFailed',
-    ClientRegistrationPending: 'ClientRegistrationPending',
-
-    UserChanged: 'UserChanged',
-    UserLicenseChanged: 'UserLicenseChanged',
-
-    VoiceChanged: 'VoiceChanged',
-    VoiceListChanged: 'VoiceListChanged',
-    VoiceChangerStatusChanged: 'VoiceChangerStatusChanged',
-    VoiceParameterChanged: 'VoiceParameterChanged',
-
-    HearMyselfStatusChanged: 'HearMyselfStatusChanged',
-    BackgroundEffectStatusChanged: 'BackgroundEffectStatusChanged',
-    MuteMicStatusChanged: 'MuteMicStatusChanged',
-    BadLanguageStatusChanged: 'BadLanguageStatusChanged',
-
-    SoundboardListChanged: 'SoundboardListChanged',
-    MemeListChanged: 'MemeListChanged',
-  };
-
-  constructor(api_host: string, client_key: string, reconnect = true) {
+  constructor(api_host: string, client_key: string, reconnect = true, reconnect_timeout = 5000) {
     super();
 
     this.api_host = api_host;
     this.client_key = client_key;
     this.api_port = 0;
     this.reconnect = reconnect;
+    this.reconnect_timeout = reconnect_timeout;
 
     this.external_listeners = [];
     this.connected = false;
@@ -219,7 +220,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    * @returns Promise<number> The port number if found, false if not
    */
   private async find_port(): Promise<number> {
-    for (const port of this.possible_ports) {
+    for (const port of possible_ports) {
       const available = await this.test_port(port);
       if (available) {
         return Promise.resolve(port);
@@ -254,7 +255,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
   }
 
   private async onMessage(event: WSMessageEvent) {
-    const data: VoicemodMessageEvent = JSON.parse(event.data.toString());
+    const data: MessageEvent = JSON.parse(event.data.toString());
     this.emit('AllEvents', data);
 
     if (data.msg && data.msg.toLowerCase() === 'pending authentication') {
@@ -263,7 +264,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
       this.internal_events.emit(data.id, data);
     } else if (data.id || data.actionID) {
       // Events triggered by us
-      this.emit(this.action_map[data.actionType], data.actionObject);
+      this.emit(action_map[data.actionType], data.actionObject);
       this.internal_events.emit(data.id || data.actionID, data);
     } else if (data.action && data.action !== null && data.action.endsWith('Event')) {
       // Events triggered by the app
@@ -411,11 +412,11 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    * @returns Promise<VoicemodRegisterClientResponse>
    * @private
    */
-  private async registerClient(clientKey: string): Promise<VoicemodRegisterClientResponse> {
+  private async registerClient(clientKey: string): Promise<RegisterClientResponse> {
     return this.ws_get('registerClient', {
       clientKey: clientKey,
     })
-      .then((register_response: VoicemodRegisterClientResponse) => {
+      .then((register_response: RegisterClientResponse) => {
         if (register_response && parseInt(register_response.payload.status.code) === 200) {
           this.connected = true;
           this.emit('ClientRegistered', register_response);
@@ -444,7 +445,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
     }
 
     return this.ws_get('getUser', {})
-      .then((user: VoicemodResponseGetUser) => {
+      .then((user: ResponseGetUser) => {
         this.user = user.actionObject.userId;
         this.emit('UserChanged', user.actionObject.userId);
 
@@ -460,12 +461,12 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    *
    * @returns Promise<VoicemodResponseGetUserLicense>
    */
-  async getUserLicense(): Promise<VoicemodLicenseType> {
+  async getUserLicense(): Promise<LicenseType> {
     if (this.userLicense !== null) {
       return Promise.resolve(this.userLicense);
     }
 
-    return this.ws_get('getUserLicense', {}).then((userLicense: VoicemodResponseGetUserLicense) => {
+    return this.ws_get('getUserLicense', {}).then((userLicense: ResponseGetUserLicense) => {
       this.userLicense = userLicense.actionObject.licenseType;
       this.emit('UserLicenseChanged', userLicense.actionObject.licenseType);
 
@@ -481,7 +482,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    */
   async getRotatoryVoicesRemainingTime(): Promise<number> {
     return this.ws_get('getRotatoryVoicesRemainingTime', {}).then(
-      (remaining_time: VoicemodResponseGetRotatoryVoicesRemainingTime) => {
+      (remaining_time: ResponseGetRotatoryVoicesRemainingTime) => {
         return Promise.resolve(remaining_time.actionObject.remainingTime);
       },
     );
@@ -493,8 +494,8 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    *
    * @returns Promise<VoicemodVoice[]>
    */
-  async getVoices(): Promise<VoicemodVoice[]> {
-    return this.ws_get('getVoices', {}).then((voices: VoicemodResponseGetVoices) => {
+  async getVoices(): Promise<Voice[]> {
+    return this.ws_get('getVoices', {}).then((voices: ResponseGetVoices) => {
       this.voiceList = voices.actionObject.voices;
       this.emit('VoiceListChanged', voices.actionObject.voices);
       return Promise.resolve(voices.actionObject.voices);
@@ -506,13 +507,13 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    *
    * @returns Promise<VoicemodVoice>
    */
-  async getCurrentVoice(): Promise<VoicemodVoice> {
+  async getCurrentVoice(): Promise<Voice> {
     if (this.current_voice !== null) {
       return Promise.resolve(this.getVoiceFromID(this.current_voice));
     }
 
     return this.ws_get('getCurrentVoice', {}).then(
-      async (current_voice: VoicemodResponseGetCurrentVoice) => {
+      async (current_voice: ResponseGetCurrentVoice) => {
         const voiceId = current_voice.actionObject.voiceID;
 
         this.current_voice = voiceId;
@@ -532,13 +533,13 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    *
    * @returns Promise<VoicemodSoundboard[]>
    */
-  async getAllSoundboard(): Promise<VoicemodSoundboard[]> {
+  async getAllSoundboard(): Promise<Soundboard[]> {
     if (this.soundboards !== null) {
       return Promise.resolve(this.soundboards);
     }
 
     return this.ws_get('getAllSoundboard', {})
-      .then((soundboard: VoicemodResponseGetAllSoundboard) => {
+      .then((soundboard: ResponseGetAllSoundboard) => {
         this.soundboards = soundboard.actionObject.soundboards;
         this.emit('SoundboardListChanged', soundboard.actionObject.soundboards);
         return Promise.resolve(soundboard.actionObject.soundboards);
@@ -554,7 +555,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    *
    * @returns Promise<VoicemodSoundboard>
    */
-  async getActiveSoundboardProfile(): Promise<VoicemodSoundboard> {
+  async getActiveSoundboardProfile(): Promise<Soundboard> {
     if (this.activeSoundboard !== null) {
       return Promise.resolve(this.getSoundboardFromID(this.activeSoundboard));
     }
@@ -563,7 +564,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
       this.soundboards = soundboards;
 
       return this.ws_get('getActiveSoundboardProfile', {}).then(
-        async (soundboard: VoicemodResponseGetActiveSoundboard) => {
+        async (soundboard: ResponseGetActiveSoundboard) => {
           const activeSoundboard = await this.getSoundboardFromID(
             soundboard.actionObject.profileId,
           );
@@ -586,12 +587,12 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    *
    * @returns Promise<VoicemodMeme[]>
    */
-  async getMemes(): Promise<VoicemodMeme[]> {
+  async getMemes(): Promise<Meme[]> {
     if (this.memes !== null) {
       return Promise.resolve(this.memes);
     }
 
-    return this.ws_get('getMemes', {}).then((memes: VoicemodResponseGetMemes) => {
+    return this.ws_get('getMemes', {}).then((memes: ResponseGetMemes) => {
       this.memes = memes.actionObject.memes;
       this.emit('MemeListChanged', memes.actionObject.memes);
       return Promise.resolve(memes.actionObject.memes);
@@ -604,7 +605,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    * @param id string The ID of the bitmap to get
    * @returns Promise<VoicemodBitmap>
    */
-  async getBitmap(id: string, type: 'voice' | 'meme'): Promise<VoicemodBitmap> {
+  async getBitmap(id: string, type: 'voice' | 'meme'): Promise<Bitmap> {
     let payload;
     if (type === 'voice') {
       payload = { voiceID: id };
@@ -613,7 +614,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
     } else {
       return Promise.reject('Invalid type');
     }
-    return this.ws_get('getBitmap', payload).then((bitmap: VoicemodBitmap) => {
+    return this.ws_get('getBitmap', payload).then((bitmap: Bitmap) => {
       return Promise.resolve(bitmap);
     });
   }
@@ -631,7 +632,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
     parameterName: string | null = null,
     parameterValue: string | null = null,
   ): Promise<void> {
-    let payload: VoicemodLoadVoicePayload = {
+    let payload: LoadVoicePayload = {
       voiceID: voiceID,
     };
 
@@ -655,7 +656,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    *
    * @param mode VoicemodSelectVoiceMode Mode to use when selecting a voice
    */
-  async selectRandomVoice(mode: VoicemodSelectVoiceMode | null = null): Promise<void> {
+  async selectRandomVoice(mode: SelectVoiceMode | null = null): Promise<void> {
     return this.ws_get('selectRandomVoice', {
       mode: mode,
     });
@@ -692,7 +693,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
   async toggleHearMyVoice(state: boolean): Promise<boolean> {
     return this.ws_get('toggleHearMyVoice', {
       value: state,
-    }).then((status: VoicemodResponseToggleHearMyself) => {
+    }).then((status: ResponseToggleHearMyself) => {
       this.hear_myself_status = status.actionObject.value;
       this.emit('HearMyselfStatusChanged', status.actionObject.value);
 
@@ -726,7 +727,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
   async toggleVoiceChanger(state: boolean): Promise<boolean> {
     return this.ws_get('toggleVoiceChanger', {
       value: state,
-    }).then((status: VoicemodResponseToggleVoiceChanger) => {
+    }).then((status: ResponseToggleVoiceChanger) => {
       this.voice_changer_status = status.actionObject.value;
       this.emit('VoiceChangerStatusChanged', status.actionObject.value);
 
@@ -777,7 +778,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
     }
 
     return this.ws_get('getMuteMicStatus', {})
-      .then((status: VoicemodResponseMuteMicStatus) => {
+      .then((status: ResponseMuteMicStatus) => {
         this.mute_mic_status = status.actionObject.value;
         this.emit('MuteMicStatusChanged', status.actionObject.value);
         return Promise.resolve(status.actionObject.value);
@@ -793,7 +794,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    * @returns Promise<boolean>
    */
   async toggleMuteMic(): Promise<void> {
-    await this.ws_get('toggleMuteMic', {}).then((status: VoicemodResponseMuteMicStatus) => {
+    await this.ws_get('toggleMuteMic', {}).then((status: ResponseMuteMicStatus) => {
       this.mute_mic_status = status.actionObject.value;
       this.emit('MuteMicStatusChanged', status.actionObject.value);
     });
@@ -848,7 +849,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
       return Promise.resolve(this.mute_meme_for_me_status);
     }
 
-    return this.ws_get('getMuteMemeForMeStatus', {}).then((mute: VoicemodResponseMuteMicStatus) => {
+    return this.ws_get('getMuteMemeForMeStatus', {}).then((mute: ResponseMuteMicStatus) => {
       this.mute_meme_for_me_status = mute.actionObject.value;
 
       this.emit('MuteMemeForMeStatusChanged', mute.actionObject.value);
@@ -863,7 +864,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    * @returns Promise<boolean>
    */
   async toggleMuteMemeForMe(): Promise<boolean> {
-    return this.ws_get('toggleMuteMemeForMe', {}).then((mute: VoicemodResponseMuteMicStatus) => {
+    return this.ws_get('toggleMuteMemeForMe', {}).then((mute: ResponseMuteMicStatus) => {
       this.mute_meme_for_me_status = mute.actionObject.value;
 
       this.emit('MuteMemeForMeStatusChanged', mute.actionObject.value);
@@ -881,12 +882,12 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    */
   async setCurrentVoiceParameter(
     parameterName: string,
-    parameterValue: VoicemodVoiceParameterValue,
+    parameterValue: VoiceParameterValue,
   ): Promise<void> {
     this.ws_get('setCurrentVoiceParameter', {
       parameterName: parameterName,
       parameterValue: parameterValue,
-    }).then((response: VoicemodresponseSetCurrentVoiceParameter) => {
+    }).then((response: ResponseSetCurrentVoiceParameter) => {
       this.emit('VoiceParameterChanged', response.actionObject);
     });
   }
@@ -905,7 +906,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    * @param voice_id string The ID of the voice to get
    * @returns Promise<VoicemodVoice>
    */
-  private async getVoiceFromID(voice_id: string): Promise<VoicemodVoice> {
+  private async getVoiceFromID(voice_id: string): Promise<Voice> {
     // We always need to have a current voice list - if we don't, we might
     // run into issues where we try to get a voice that doesn't exist in cache (yet)
 
@@ -925,7 +926,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    * @param soundboard_id string The ID of the soundboard to get
    * @returns Promise<VoicemodSoundboard>
    */
-  private async getSoundboardFromID(soundboard_id: string): Promise<VoicemodSoundboard> {
+  private async getSoundboardFromID(soundboard_id: string): Promise<Soundboard> {
     return this.getAllSoundboard().then((soundboards) => {
       if (soundboards === null) {
         throw new Error('No soundboards found');

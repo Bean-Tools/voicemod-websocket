@@ -1,5 +1,5 @@
 import { exit } from 'process';
-import { VoicemodSoundboard, VoicemodVoice } from '../types';
+import { Soundboard, Voice } from '../types';
 import VoicemodWebsocket from '../websocket';
 
 import { config } from './config';
@@ -27,7 +27,7 @@ voicemod.on('UserLicenseChanged', (license) => {
     console.log('VM.on(UserLicenseChanged):: ', license);
 });
 
-voicemod.on('VoiceChanged', (voice: VoicemodVoice) => {
+voicemod.on('VoiceChanged', (voice: Voice) => {
     console.log('VM.on(VoiceChanged):::      ', voice.friendlyName || voice.id);
 });
 
@@ -51,7 +51,7 @@ voicemod.on('ClientRegistered', () => {
       console.log('Active soundboard profile', profile.name);
     });
 
-    voicemod.getAllSoundboard().then((profiles: VoicemodSoundboard[]) => {
+    voicemod.getAllSoundboard().then((profiles: Soundboard[]) => {
       console.log('Number of Soundboard profiles', profiles.length);
     });
 
