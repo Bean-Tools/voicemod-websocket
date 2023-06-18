@@ -85,4 +85,8 @@ voicemod.on('ClientRegistered', () => {
   });
 });
 
-voicemod.connect();
+voicemod.connect().then(() => {
+  console.log('Connected');
+}).catch((err) => {
+  console.error('Error connecting', err);
+});

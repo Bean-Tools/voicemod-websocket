@@ -34,8 +34,11 @@ import type {
   VoicemodResponseToggleHearMyself,
   VoicemodResponseToggleVoiceChanger,
   VoicemodVoiceParameter,
-  VoicemodresponseSetCurrentVoiceParameter,
+  VoicemodresponseSetCurrentVoiceParameter as VoicemodResponseSetCurrentVoiceParameter,
+  VoicemodLoadVoicePayload,
+  VoicemodVoiceParameterValue,
 } from './types';
+import { rejects } from 'assert';
 
 /**
  * Voicemod WebSocket
@@ -61,12 +64,12 @@ import type {
  * const voicemod = new VoicemodWebSocket();
  * voicemod.connect("localhost", "aaaaaa-123456");
  *
- * voicemod.onVMEvent("voiceChange", (voice) => {
+ * voicemod.on("VoiceChanged", (voice: VoicemodVoice) => {
  *  console.log("Voice changed to", voice.friendlyName);
  * });
  *
  */
-export default class VoicemodWebSocket extends EventEmitter<MapValueToArgsArray<EventTypes>> {
+export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<EventTypes>> {
   private ws: WebSocket | null = null;
   private api_host: string;
   private api_port: number;
@@ -246,6 +249,10 @@ export default class VoicemodWebSocket extends EventEmitter<MapValueToArgsArray<
       ws.onclose = () => {
         return resolve(false);
       };
+
+      ws.onerror = () => {
+        return resolve(false);
+      };
     });
   }
 
@@ -311,6 +318,7 @@ export default class VoicemodWebSocket extends EventEmitter<MapValueToArgsArray<
         this.emit('SoundboardListChanged', data.actionObject.soundboards);
       }
     } else {
+      // TODO: Handle errrors more gracefully
       console.error('Unknown message: ', data);
       throw new Error('Unknown message: ' + data.action || data.actionID);
     }
@@ -402,7 +410,7 @@ export default class VoicemodWebSocket extends EventEmitter<MapValueToArgsArray<
   /**
    * Authenticates the client against the Voicemod API
    *
-   * @param clientKey string The client key to use
+   * @param clientKey string The API key for the Control API
    * @returns Promise<VoicemodRegisterClientResponse>
    * @private
    */
@@ -462,7 +470,6 @@ export default class VoicemodWebSocket extends EventEmitter<MapValueToArgsArray<
 
     return this.ws_get('getUserLicense', {}).then((userLicense: VoicemodResponseGetUserLicense) => {
       this.userLicense = userLicense.actionObject.licenseType;
-
       this.emit('UserLicenseChanged', userLicense.actionObject.licenseType);
 
       return Promise.resolve(userLicense.actionObject.licenseType);
@@ -504,7 +511,7 @@ export default class VoicemodWebSocket extends EventEmitter<MapValueToArgsArray<
    */
   async getCurrentVoice(): Promise<VoicemodVoice> {
     if (this.current_voice !== null) {
-      return Promise.resolve(this.getVoiceFromId(this.current_voice));
+      return Promise.resolve(this.getVoiceFromID(this.current_voice));
     }
 
     return this.ws_get('getCurrentVoice', {}).then(
@@ -513,7 +520,7 @@ export default class VoicemodWebSocket extends EventEmitter<MapValueToArgsArray<
 
         this.current_voice = voiceId;
 
-        const voice = await this.getVoiceFromId(this.current_voice);
+        const voice = await this.getVoiceFromID(this.current_voice);
         this.emit('VoiceChanged', voice);
 
         return Promise.resolve(voice);
@@ -526,7 +533,7 @@ export default class VoicemodWebSocket extends EventEmitter<MapValueToArgsArray<
    * soundboard and each sound that is enabled based on the
    * current user's license.
    *
-   * @returns Promise<VoicemodSoundboard>
+   * @returns Promise<VoicemodSoundboard[]>
    */
   async getAllSoundboard(): Promise<VoicemodSoundboard[]> {
     if (this.soundboards !== null) {
@@ -552,7 +559,7 @@ export default class VoicemodWebSocket extends EventEmitter<MapValueToArgsArray<
    */
   async getActiveSoundboardProfile(): Promise<VoicemodSoundboard> {
     if (this.activeSoundboard !== null) {
-      return Promise.resolve(this.getSoundboardFromId(this.activeSoundboard));
+      return Promise.resolve(this.getSoundboardFromID(this.activeSoundboard));
     }
 
     return this.getAllSoundboard().then(async (soundboards) => {
@@ -560,7 +567,7 @@ export default class VoicemodWebSocket extends EventEmitter<MapValueToArgsArray<
 
       return this.ws_get('getActiveSoundboardProfile', {}).then(
         async (soundboard: VoicemodResponseGetActiveSoundboardProfile) => {
-          const activeSoundboard = await this.getSoundboardFromId(
+          const activeSoundboard = await this.getSoundboardFromID(
             soundboard.actionObject.profileId,
           );
 
@@ -627,7 +634,7 @@ export default class VoicemodWebSocket extends EventEmitter<MapValueToArgsArray<
     parameterName: string | null = null,
     parameterValue: string | null = null,
   ): Promise<void> {
-    let payload: any = {
+    let payload: VoicemodLoadVoicePayload = {
       voiceID: voiceID,
     };
 
@@ -639,15 +646,9 @@ export default class VoicemodWebSocket extends EventEmitter<MapValueToArgsArray<
       };
     }
 
-    const loadVoice = await this.ws_get('loadVoice', payload);
-
-    if (loadVoice === false) {
-      return Promise.reject(false);
-    }
-
-    await this.onVoiceChange(voiceID);
-
-    return;
+    return this.ws_get('loadVoice', payload).then(async (response) => {
+      return this.onVoiceChange(voiceID);
+    });
   }
 
   setVoice = this.loadVoice;
@@ -712,15 +713,12 @@ export default class VoicemodWebSocket extends EventEmitter<MapValueToArgsArray<
       return Promise.resolve(this.voice_changer_status);
     }
 
-    const status: VoicemodResponseToggleVoiceChanger = await this.ws_get(
-      'getVoiceChangerStatus',
-      {},
-    );
+    return this.ws_get('getVoiceChangerStatus', {}).then((status) => {
+      this.voice_changer_status = status.actionObject.value;
+      this.emit('VoiceChangerStatusChanged', status.actionObject.value);
 
-    this.voice_changer_status = status.actionObject.value;
-    this.emit('VoiceChangerStatusChanged', status.actionObject.value);
-
-    return Promise.resolve(status.actionObject.value);
+      return Promise.resolve(status.actionObject.value);
+    });
   }
 
   /**
@@ -729,14 +727,14 @@ export default class VoicemodWebSocket extends EventEmitter<MapValueToArgsArray<
    * @param state boolean The new status of the button
    */
   async toggleVoiceChanger(state: boolean): Promise<boolean> {
-    const status: VoicemodResponseToggleVoiceChanger = await this.ws_get('toggleVoiceChanger', {
+    return this.ws_get('toggleVoiceChanger', {
       value: state,
+    }).then((status: VoicemodResponseToggleVoiceChanger) => {
+      this.voice_changer_status = status.actionObject.value;
+      this.emit('VoiceChangerStatusChanged', status.actionObject.value);
+
+      return Promise.resolve(status.actionObject.value);
     });
-
-    this.voice_changer_status = status.actionObject.value;
-    this.emit('VoiceChangerStatusChanged', status.actionObject.value);
-
-    return Promise.resolve(status.actionObject.value);
   }
 
   /**
@@ -880,30 +878,37 @@ export default class VoicemodWebSocket extends EventEmitter<MapValueToArgsArray<
   /**
    * Requests a change of parameter for currently selected voice.
    *
-   * @param parameter VoicemodVoiceParameter The parameter to change
+   * @param parameterName string The name of the parameter to change
+   * @param parameterValue {} The value(s) of the parameter to change
+   * @returns Promise<void>
    */
   async setCurrentVoiceParameter(
     parameterName: string,
-    parameterValue: { value?: number; min?: number; max?: number; displayNormalized?: boolean },
+    parameterValue: VoicemodVoiceParameterValue,
   ): Promise<void> {
     this.ws_get('setCurrentVoiceParameter', {
       parameterName: parameterName,
       parameterValue: parameterValue,
-    }).then((response: VoicemodresponseSetCurrentVoiceParameter) => {
+    }).then((response: VoicemodResponseSetCurrentVoiceParameter) => {
       this.emit('VoiceParameterChanged', response.actionObject);
     });
   }
 
   /**
-   *
-   * @param voice string The ID of the voice to change to
+   * @param voice_id string The ID of the voice to change to
    */
-  private async onVoiceChange(voice: string) {
-    this.current_voice = voice;
-    this.emit('VoiceChanged', await this.getVoiceFromId(voice));
+  private async onVoiceChange(voice_id: string) {
+    this.current_voice = voice_id;
+    this.emit('VoiceChanged', await this.getVoiceFromID(voice_id));
   }
 
-  private async getVoiceFromId(voice_id: string): Promise<VoicemodVoice> {
+  /**
+   * Gets a voice from the voice list by ID
+   *
+   * @param voice_id string The ID of the voice to get
+   * @returns Promise<VoicemodVoice>
+   */
+  private async getVoiceFromID(voice_id: string): Promise<VoicemodVoice> {
     // We always need to have a current voice list - if we don't, we might
     // run into issues where we try to get a voice that doesn't exist in cache (yet)
 
@@ -917,7 +922,13 @@ export default class VoicemodWebSocket extends EventEmitter<MapValueToArgsArray<
     });
   }
 
-  private async getSoundboardFromId(soundboard_id: string): Promise<VoicemodSoundboard> {
+  /**
+   * Gets a soundboard from the soundboard list by ID
+   *
+   * @param soundboard_id string The ID of the soundboard to get
+   * @returns Promise<VoicemodSoundboard>
+   */
+  private async getSoundboardFromID(soundboard_id: string): Promise<VoicemodSoundboard> {
     return this.getAllSoundboard().then((soundboards) => {
       if (soundboards === null) {
         throw new Error('No soundboards found');

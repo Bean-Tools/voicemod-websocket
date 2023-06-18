@@ -23,6 +23,13 @@ export type VoicemodVoiceParameter = {
   [key: string]: { [key: string]: any };
 };
 
+export type VoicemodVoiceParameterValue = {
+  value?: number;
+  min?: number;
+  max?: number;
+  displayNormalized?: boolean;
+};
+
 export type VoicemodResponseGetVoices = {
   id: string;
   actionType: 'getVoices';
@@ -80,6 +87,12 @@ export type VoicemodMessageRequest = {
   id: string;
   // TODO: Specify deeper
   payload: any;
+};
+
+export type VoicemodLoadVoicePayload = {
+  voiceID: string;
+  parameterName?: string;
+  parameterValue?: string;
 };
 
 export type VoicemodLicenseType = 'free' | 'pro';
