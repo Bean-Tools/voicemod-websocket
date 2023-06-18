@@ -3,7 +3,6 @@ import { WebSocket } from 'ws';
 // To avoid issues with similarly event type names, we
 // import the types from ws prefixed with WS
 import {
-  Event as WSEvent,
   ErrorEvent as WSErrorEvent,
   CloseEvent as WSCloseEvent,
   MessageEvent as WSMessageEvent,
@@ -11,14 +10,14 @@ import {
 
 import EventEmitter from 'eventemitter3';
 
-import type {
+import {
   VoicemodMessageEvent,
   VoicemodRegisterClientResponse,
   VoicemodVoice,
   EventTypes,
   VoicemodResponseGetVoices,
   VoicemodResponseGetCurrentVoice,
-  VoicemodResponseMuteMicStatus as VoicemodResponseMuteStatus,
+  VoicemodResponseMuteMicStatus,
   MapValueToArgsArray,
   VoicemodSelectVoiceMode,
   VoicemodResponseGetUser,
@@ -27,18 +26,16 @@ import type {
   VoicemodResponseGetRotatoryVoicesRemainingTime,
   VoicemodResponseGetAllSoundboard,
   VoicemodSoundboard,
-  VoicemodResponseGetActiveSoundboard as VoicemodResponseGetActiveSoundboardProfile,
+  VoicemodResponseGetActiveSoundboard,
   VoicemodMeme,
   VoicemodResponseGetMemes,
   VoicemodBitmap,
   VoicemodResponseToggleHearMyself,
   VoicemodResponseToggleVoiceChanger,
-  VoicemodVoiceParameter,
-  VoicemodresponseSetCurrentVoiceParameter as VoicemodResponseSetCurrentVoiceParameter,
+  VoicemodresponseSetCurrentVoiceParameter,
   VoicemodLoadVoicePayload,
   VoicemodVoiceParameterValue,
 } from './types';
-import { rejects } from 'assert';
 
 /**
  * Voicemod WebSocket
@@ -566,7 +563,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
       this.soundboards = soundboards;
 
       return this.ws_get('getActiveSoundboardProfile', {}).then(
-        async (soundboard: VoicemodResponseGetActiveSoundboardProfile) => {
+        async (soundboard: VoicemodResponseGetActiveSoundboard) => {
           const activeSoundboard = await this.getSoundboardFromID(
             soundboard.actionObject.profileId,
           );
@@ -780,7 +777,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
     }
 
     return this.ws_get('getMuteMicStatus', {})
-      .then((status: VoicemodResponseMuteStatus) => {
+      .then((status: VoicemodResponseMuteMicStatus) => {
         this.mute_mic_status = status.actionObject.value;
         this.emit('MuteMicStatusChanged', status.actionObject.value);
         return Promise.resolve(status.actionObject.value);
@@ -796,7 +793,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    * @returns Promise<boolean>
    */
   async toggleMuteMic(): Promise<void> {
-    await this.ws_get('toggleMuteMic', {}).then((status: VoicemodResponseMuteStatus) => {
+    await this.ws_get('toggleMuteMic', {}).then((status: VoicemodResponseMuteMicStatus) => {
       this.mute_mic_status = status.actionObject.value;
       this.emit('MuteMicStatusChanged', status.actionObject.value);
     });
@@ -851,7 +848,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
       return Promise.resolve(this.mute_meme_for_me_status);
     }
 
-    return this.ws_get('getMuteMemeForMeStatus', {}).then((mute: VoicemodResponseMuteStatus) => {
+    return this.ws_get('getMuteMemeForMeStatus', {}).then((mute: VoicemodResponseMuteMicStatus) => {
       this.mute_meme_for_me_status = mute.actionObject.value;
 
       this.emit('MuteMemeForMeStatusChanged', mute.actionObject.value);
@@ -866,7 +863,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    * @returns Promise<boolean>
    */
   async toggleMuteMemeForMe(): Promise<boolean> {
-    return this.ws_get('toggleMuteMemeForMe', {}).then((mute: VoicemodResponseMuteStatus) => {
+    return this.ws_get('toggleMuteMemeForMe', {}).then((mute: VoicemodResponseMuteMicStatus) => {
       this.mute_meme_for_me_status = mute.actionObject.value;
 
       this.emit('MuteMemeForMeStatusChanged', mute.actionObject.value);
@@ -889,7 +886,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
     this.ws_get('setCurrentVoiceParameter', {
       parameterName: parameterName,
       parameterValue: parameterValue,
-    }).then((response: VoicemodResponseSetCurrentVoiceParameter) => {
+    }).then((response: VoicemodresponseSetCurrentVoiceParameter) => {
       this.emit('VoiceParameterChanged', response.actionObject);
     });
   }
