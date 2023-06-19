@@ -560,7 +560,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    * @param parameterName The name of the parameter to change
    * @param parameterValue The value of the parameter to change
    */
-  loadVoice(
+  async loadVoice(
     voiceID: string,
     parameterName: string | null = null,
     parameterValue: string | null = null,
@@ -577,9 +577,8 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
       };
     }
 
-    return this.wsGet('loadVoice', payload).then(async (response) => {
-      return this.onVoiceChange(voiceID);
-    });
+    await this.wsGet('loadVoice', payload);
+    return await this.onVoiceChange(voiceID);
   }
 
   setVoice = this.loadVoice;
