@@ -675,16 +675,15 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
   /**
    * Requests the current state of the "Mute" button in the app.
    */
-  getMuteMicStatus(): Promise<boolean> {
-    if (this.mute_mic_status !== null) {
-      return Promise.resolve(this.mute_mic_status);
+  async getMuteMicStatus(): Promise<boolean> {
+    if (this.mute_mic_status != null) {
+      return this.mute_mic_status;
     }
 
-    return this.wsGet('getMuteMicStatus', {}).then((status: ResponseMuteMicStatus) => {
-      this.mute_mic_status = status.actionObject.value;
-      this.emit('MuteMicStatusChanged', status.actionObject.value);
-      return status.actionObject.value;
-    });
+    const getMuteMicStatusResponse = await this.wsGet('getMuteMicStatus', {});
+    this.mute_mic_status = getMuteMicStatusResponse.actionObject.value;
+    this.emit('MuteMicStatusChanged', getMuteMicStatusResponse.actionObject.value);
+    return getMuteMicStatusResponse.actionObject.value;
   }
 
   /**
