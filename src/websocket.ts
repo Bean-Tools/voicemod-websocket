@@ -447,15 +447,13 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
   /**
    * Requests the list of the available voices and the current
    * voice selected in the app for the current user.
-   *
-   * @returns Promise<VoicemodVoice[]>
    */
-  getVoices(): Promise<Voice[]> {
-    return this.wsGet('getVoices', {}).then((voices: ResponseGetVoices) => {
-      this.voiceList = voices.actionObject.voices;
-      this.emit('VoiceListChanged', voices.actionObject.voices);
-      return voices.actionObject.voices;
-    });
+  async getVoices(): Promise<Voice[]> {
+    const getVoicesResponse = await this.wsGet('getVoices', {});
+    this.voiceList = getVoicesResponse.actionObject.voices;
+    this.emit('VoiceListChanged', getVoicesResponse.actionObject.voices);
+
+    return getVoicesResponse.actionObject.voices;
   }
 
   /**
