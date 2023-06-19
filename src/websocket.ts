@@ -22,7 +22,8 @@ import {
   Meme,
   Bitmap,
   LoadVoicePayload,
-  VoiceParameterValue
+  VoiceParameterValue,
+  VoiceState
 } from './types';
 
 const action_map: { [key: string]: keyof EventTypes } = {
@@ -111,42 +112,31 @@ const getVoiceModePort = async (host: string) : Promise<number> => {
  *
  */
 export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<EventTypes>> {
-  private ws: WebSocket | null = null;
-  private api_host: string;
-  private api_port: number;
-  private client_key: string;
+  private options : {
+    host: string,
+    clientKey: string,
+    reconnect: boolean,
+    timeout: number
+  };
+
   private external_listeners: string[];
   private internal_events = new EventEmitter();
+
   private connected: boolean;
 
-  private reconnect: boolean;
-  private reconnect_timeout: number;
+  private ws: WebSocket | null = null;
 
-  private current_voice: null | string = null;
-  private voiceList: null | Voice[] = null;
+  private voicemodState : VoiceState = {};
 
-  private user: null | string = null;
-  private user_license: null | LicenseType = null;
-
-  private soundboards: null | Soundboard[] = null;
-  private active_soundboard: null | string = null;
-
-  private memes: null | Meme[] = null;
-
-  private hear_myself_status: null | boolean = null;
-  private voice_changer_status: null | boolean = null;
-  private background_effects_status: null | boolean = null;
-  private mute_meme_for_me_status: null | boolean = null;
-  private mute_mic_status: null | boolean = null;
-
-  constructor(api_host: string, client_key: string, reconnect = true, reconnect_timeout = 5000) {
+  constructor(host: string, clientKey: string, reconnect = true, timeout = 5000) {
     super();
 
-    this.api_host = api_host;
-    this.client_key = client_key;
-    this.api_port = 0;
-    this.reconnect = reconnect;
-    this.reconnect_timeout = reconnect_timeout;
+    this.options = {
+      host,
+      clientKey,
+      reconnect,
+      timeout
+    };
 
     this.external_listeners = [];
     this.connected = false;
@@ -163,9 +153,9 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
       return;
     }
 
-    this.api_port = await getVoiceModePort(this.api_host);
+    const port = await getVoiceModePort(this.options.host);
 
-    this.ws = new WebSocket(`ws://${this.api_host}:${this.api_port}/v1`);
+    this.ws = new WebSocket(`ws://${this.options.host}:${port}/v1`);
 
     this.ws.onmessage = this.onMessage.bind(this);
     this.ws.onclose = this.onClose.bind(this);
@@ -216,61 +206,81 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
 
     if (data.msg && data.msg.toLowerCase() === 'pending authentication') {
       this.emit('ClientRegistrationPending');
+
     } else if (data.action && data.action === 'registerClient') {
       this.internal_events.emit(data.id, data);
+
     } else if (data.id || data.actionID) {
       // Events triggered by us
       this.emit(action_map[data.actionType], data.actionObject);
       this.internal_events.emit(data.id || data.actionID, data);
+
     } else if (data.action && data.action !== null && data.action.endsWith('Event')) {
       // Events triggered by the app
       if (data.action === 'voiceChangerEnabledEvent') {
-        this.voice_changer_status = true;
+        this.voicemodState.voiceChangerStatus = true;
         this.emit('VoiceChangerStatusChanged', true);
+
       } else if (data.action === 'voiceChangerDisabledEvent') {
-        this.voice_changer_status = false;
+        this.voicemodState.voiceChangerStatus = false;
         this.emit('VoiceChangerStatusChanged', false);
+
       } else if (data.action === 'backgroundEffectsEnabledEvent') {
-        this.background_effects_status = true;
+        this.voicemodState.backgroundEffectsStatus = true;
         this.emit('BackgroundEffectStatusChanged', true);
+
       } else if (data.action === 'backgroundEffectsDisabledEvent') {
-        this.background_effects_status = false;
+        this.voicemodState.backgroundEffectsStatus = false;
         this.emit('BackgroundEffectStatusChanged', false);
+
       } else if (data.action === 'hearMySelfEnabledEvent') {
-        this.hear_myself_status = true;
+        this.voicemodState.hearMyselfStatus = true;
         this.emit('HearMyselfStatusChanged', true);
+
       } else if (data.action === 'hearMySelfDisabledEvent') {
-        this.hear_myself_status = false;
+        this.voicemodState.hearMyselfStatus = false;
         this.emit('HearMyselfStatusChanged', false);
+
       } else if (data.action === 'muteMicEnabledEvent') {
+        this.voicemodState.muteMicStatus = true;
         this.emit('MuteMicStatusChanged', true);
-        this.mute_mic_status = true;
+
       } else if (data.action === 'muteMicDisabledEvent') {
-        this.mute_mic_status = false;
+        this.voicemodState.muteMicStatus = false;
         this.emit('MuteMicStatusChanged', false);
+
       } else if (data.action === 'muteMemeForMeEnabledEvent') {
-        this.mute_meme_for_me_status = true;
+        this.voicemodState.muteMemeForMeStatus = true;
         this.emit('MuteMemeForMeStatusChanged', true);
+
       } else if (data.action === 'muteMemeForMeDisabledEvent') {
-        this.mute_meme_for_me_status = false;
+        this.voicemodState.muteMemeForMeStatus = false;
         this.emit('MuteMemeForMeStatusChanged', false);
+
       } else if (data.action === 'voiceLoadedEvent') {
         this.onVoiceChange(data.actionObject.voiceID);
+
       } else if (data.action === 'badLanguageEnabledEvent') {
         this.emit('BadLanguageStatusChanged', true);
+
       } else if (data.action === 'badLanguageDisabledEvent') {
         this.emit('BadLanguageStatusChanged', false);
+
       } else {
+
         // TODO: Handle errrors more gracefully
         console.error('Unknown message: ', data);
         throw new Error('Unknown event: ' + data.action || data.actionID);
       }
+
     } else if (data.action && data.action !== null) {
+
       // List updates triggered by the app
       if (data.action === 'getAllSoundboard') {
-        this.soundboards = data.actionObject.soundboards;
+        this.voicemodState.soundboards = data.actionObject.soundboards;
         this.emit('SoundboardListChanged', data.actionObject.soundboards);
       }
+
     } else {
       // TODO: Handle errrors more gracefully
       console.error('Unknown message: ', data);
@@ -309,9 +319,32 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    * @param payload The payload to send
    * @returns The response payload
    */
-  private async wsGet(action: string, payload: any = {}): Promise<any> {
+  private async wsGet(
+    action: string,
+    payload: any = {},
+    settings: {
+      walk?: boolean | string;
+      storeAs?: keyof VoiceState;
+      emit?: keyof EventTypes;
+    } = {}
+  ): Promise<any> {
     try {
-      return await this.internalEvent(this.wsSendMessage(action, payload));
+      let result : any = await this.internalEvent(this.wsSendMessage(action, payload));
+
+      if (settings.walk) {
+        result = result.actionObject[settings.walk === true ? 'value' : settings.walk];
+      }
+
+      if (settings.storeAs) {
+        this.voicemodState[settings.storeAs] = result;
+      }
+
+      if (settings.emit != null) {
+        this.emit(settings.emit, result);
+      }
+
+      return result;
+
     } catch (error) {
       throw new Error('Could not get ' + action);
     }
@@ -337,7 +370,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
     this.emit('ConnectionOpened');
 
     try {
-      await this.registerClient(this.client_key);
+      await this.registerClient(this.options.clientKey);
       this.internal_events.emit('Connected');
       this.emit('Connected');
       return true;
@@ -354,10 +387,10 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
     this.ws = null;
     this.connected = false;
 
-    if (this.reconnect) {
+    if (this.options.reconnect) {
       setTimeout(() => {
         this.connect();
-      }, this.reconnect_timeout);
+      }, this.options.timeout || 5000);
     }
   }
 
@@ -396,29 +429,30 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    * @returns Promise<string>
    */
   async getUser(): Promise<string> {
-    if (this.user !== null) {
-      return this.user;
+    if (this.voicemodState.user != null) {
+      return this.voicemodState.user;
     }
 
-    const reply = await this.wsGet('getUser', {});
-    this.user = reply.actionObject.userId;
-    this.emit('UserChanged', reply.actionObject.userId);
-    return reply.actionObject.userId;
+    return await this.wsGet('getUser', {}, {
+      walk: "userId",
+      storeAs: "user",
+      emit: "UserChanged"
+    });
   }
 
   /**
    * Requests user license information.
    */
   async getUserLicense(): Promise<LicenseType> {
-    if (this.user_license !== null) {
-      return this.user_license;
+    if (this.voicemodState.userLicense != null) {
+      return this.voicemodState.userLicense;
     }
 
-    const reply = await this.wsGet('getUserLicense', {});
-    this.user_license = reply.actionObject.licenseType;
-    this.emit('UserLicenseChanged', reply.actionObject.licenseType);
-
-    return reply.actionObject.licenseType;
+    return await this.wsGet('getUserLicense', {}, {
+      walk: 'licenseType',
+      storeAs: 'userLicense',
+      emit: 'UserLicenseChanged'
+    });
   }
 
   /**
@@ -426,8 +460,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    * made to the selection of voices that are available under the free version.
    */
   async getRotatoryVoicesRemainingTime(): Promise<number> {
-    const reply = await this.wsGet('getRotatoryVoicesRemainingTime', {});
-    return reply.actionObject.remainingTime;
+    return await this.wsGet('getRotatoryVoicesRemainingTime', {}, { walk: 'remainingTime'})
   }
 
   /**
@@ -435,25 +468,27 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    * voice selected in the app for the current user.
    */
   async getVoices(): Promise<Voice[]> {
-    const reply = await this.wsGet('getVoices', {});
-    this.voiceList = reply.actionObject.voices;
-    this.emit('VoiceListChanged', reply.actionObject.voices);
-
-    return reply.actionObject.voices;
+    return await this.wsGet('getVoices', {}, {
+      walk: 'voices',
+      storeAs: 'voiceList',
+      emit: 'VoiceListChanged'
+    });
   }
 
   /**
    * Requests the voice that is currently selected in the app.
    */
   async getCurrentVoice(): Promise<Voice> {
-    if (this.current_voice !== null) {
-      return await this.getVoiceFromID(this.current_voice);
+    if (this.voicemodState.currentVoice != null) {
+      return await this.getVoiceFromId(this.voicemodState.currentVoice);
     }
-    const reply = await this.wsGet('getCurrentVoice', {});
-    const voiceId = reply.actionObject.voiceID;
-    this.current_voice = voiceId;
 
-    const voice = await this.getVoiceFromID(voiceId);
+    const result = await this.wsGet('getCurrentVoice', {}, {
+      walk: 'voiceID',
+      storeAs: 'currentVoice'
+    });
+
+    const voice = await this.getVoiceFromId(result);
     this.emit('VoiceChanged', voice);
 
     return voice;
@@ -465,16 +500,17 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    * current user's license.
    */
   async getAllSoundboard(): Promise<Soundboard[]> {
-    if (this.soundboards !== null) {
-      return this.soundboards;
+    if (this.voicemodState.soundboards != null) {
+      return this.voicemodState.soundboards;
     }
 
     try {
-      const reply = await this.wsGet('getAllSoundboard', {});
-      this.soundboards = reply.actionObject.soundboards;
-      this.emit('SoundboardListChanged', reply.actionObject.soundboards);
 
-      return reply.actionObject.soundboards;
+      return await this.wsGet('getAllSoundboard', {}, {
+        walk: 'soundboards',
+        storeAs: 'soundboards',
+        emit: 'SoundboardListChanged'
+      });
 
     } catch {
       return [];
@@ -486,19 +522,19 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    * active soundboard.
    */
   async getActiveSoundboardProfile(): Promise<Soundboard> {
-    if (this.active_soundboard != null) {
-      return await this.getSoundboardFromID(this.active_soundboard);
+    if (this.voicemodState.activeSoundboard != null) {
+      return await this.getSoundboardFromId(this.voicemodState.activeSoundboard);
     }
 
-    const soundboards = await this.getAllSoundboard();
-    this.soundboards = soundboards;
+    await this.getAllSoundboard();
 
-    const reply = await this.wsGet('getActiveSoundboardProfile', {});
-    const activeSoundboard = await this.getSoundboardFromID(reply.actionObject.profileId);
+    const result = await this.wsGet('getActiveSoundboardProfile', {}, { walk: 'profileId' });
+    const activeSoundboard = await this.getSoundboardFromId(result);
 
     if (activeSoundboard) {
-      this.active_soundboard = activeSoundboard.id;
+      this.voicemodState.activeSoundboard = activeSoundboard.id;
       return activeSoundboard;
+
     } else {
       throw new Error('Could not find active soundboard');
     }
@@ -510,15 +546,15 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    * a getMemes message.
    */
   async getMemes(): Promise<Meme[]> {
-    if (this.memes !== null) {
-      return this.memes;
+    if (this.voicemodState.memes != null) {
+      return this.voicemodState.memes;
     }
 
-    const reply = await this.wsGet('getMemes', {});
-    this.memes = reply.actionObject.memes;
-    this.emit('MemeListChanged', reply.actionObject.memes);
-
-    return reply.actionObject.memes;
+    return await this.wsGet('getMemes', {}, {
+      walk: 'memes',
+      storeAs: 'memes',
+      emit: 'MemeListChanged'
+    });
   }
 
   /**
@@ -533,7 +569,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
     } else if (type === 'meme') {
       payload = { memeID: id };
     } else {
-      return Promise.reject('Invalid type');
+      throw new Error('Invalid type');
     }
     return await this.wsGet('getBitmap', payload);
   }
@@ -580,15 +616,15 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    * Requests the current status of the "Hear my voice" button in the app.
    */
   async getHearMyselfStatus(): Promise<boolean> {
-    if (this.hear_myself_status !== null) {
-      return this.hear_myself_status;
+    if (this.voicemodState.hearMyselfStatus != null) {
+      return this.voicemodState.hearMyselfStatus;
     }
 
-    const reply = await this.wsGet('getHearMyselfStatus', {});
-    this.hear_myself_status = reply.actionObject.value;
-    this.emit('HearMyselfStatusChanged', reply.actionObject.value);
-
-    return reply.actionObject.value;
+    return await this.wsGet('getHearMyselfStatus', {}, {
+      walk: true,
+      storeAs: 'hearMyselfStatus',
+      emit: 'HearMyselfStatusChanged'
+    });
   }
 
   /**
@@ -597,25 +633,26 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    * @param state The new status of the button
    */
   async toggleHearMyVoice(state: boolean): Promise<boolean> {
-    const reply = await this.wsGet('toggleHearMyVoice', { value: state });
-    this.hear_myself_status = reply.actionObject.value;
-    this.emit('HearMyselfStatusChanged', reply.actionObject.value);
-
-    return reply.actionObject.value;
+    return await this.wsGet('toggleHearMyVoid', { value: state }, {
+      walk: true,
+      storeAs: 'hearMyselfStatus',
+      emit: 'HearMyselfStatusChanged'
+    });
   }
 
   /**
    * Requests the current state of the "Voice Changer" button in the app.
    */
   async getVoiceChangerStatus(): Promise<boolean> {
-    if (this.voice_changer_status !== null) {
-      return this.voice_changer_status;
+    if (this.voicemodState.voiceChangerStatus != null) {
+      return this.voicemodState.voiceChangerStatus;
     }
-    const reply = await this.wsGet('getVoiceChangerStatus', {});
-    this.voice_changer_status = reply.actionObject.value;
-    this.emit('VoiceChangerStatusChanged', reply.actionObject.value);
 
-    return reply.actionObject.value;
+    return await this.wsGet('getVoiceChangerStatus', {}, {
+      walk: true,
+      storeAs: 'voiceChangerStatus',
+      emit: 'VoiceChangerStatusChanged'
+    });
   }
 
   /**
@@ -624,60 +661,63 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    * @param state The new status of the button
    */
   async toggleVoiceChanger(state: boolean): Promise<boolean> {
-    const reply = await this.wsGet('toggleVoiceChanger', { value: state });
-    this.voice_changer_status = reply.actionObject.value;
-    this.emit('VoiceChangerStatusChanged', reply.actionObject.value);
-
-    return reply.actionObject.value;
+    return await this.wsGet('toggleVoiceChanger', { value: state }, {
+      walk: true,
+      storeAs: 'voiceChangerStatus',
+      emit: 'VoiceChangerStatusChanged'
+    });
   }
 
   /**
    * Requests the current state of the "Background Effects" button in the app.
    */
   async getBackgroundEffectsStatus(): Promise<boolean> {
-    if (this.background_effects_status !== null) {
-      return this.background_effects_status;
+    if (this.voicemodState.backgroundEffectsStatus != null) {
+      return this.voicemodState.backgroundEffectsStatus;
     }
 
-    const reply = await this.wsGet('getBackgroundEffectStatus', {});
-    this.background_effects_status = reply.actionObject.value;
-    this.emit('BackgroundEffectStatusChanged', reply.actionObject.value);
-
-    return reply.actionObject.value;
+    return await this.wsGet('getBackgroundEffectStatus', {}, {
+      walk: true,
+      storeAs: 'backgroundEffectsStatus',
+      emit: 'BackgroundEffectStatusChanged'
+    });
   }
 
   /**
    * Requests a toggle of the "Background Effects" button in the app.
    */
   async toggleBackgroundEffects(): Promise<boolean> {
-    const reply = await this.wsGet('toggleBackgroundEffects', {});
-    this.background_effects_status = reply.actionObject.value;
-    this.emit('BackgroundEffectStatusChanged', reply.actionObject.value);
-
-    return reply.actionObject.value;
+    return await this.wsGet('toggleBackgroundEffects', {}, {
+      walk: true,
+      storeAs: 'backgroundEffectsStatus',
+      emit: 'BackgroundEffectStatusChanged'
+    });
   }
 
   /**
    * Requests the current state of the "Mute" button in the app.
    */
   async getMuteMicStatus(): Promise<boolean> {
-    if (this.mute_mic_status != null) {
-      return this.mute_mic_status;
+    if (this.voicemodState.muteMicStatus != null) {
+      return this.voicemodState.muteMicStatus;
     }
 
-    const reply = await this.wsGet('getMuteMicStatus', {});
-    this.mute_mic_status = reply.actionObject.value;
-    this.emit('MuteMicStatusChanged', reply.actionObject.value);
-    return reply.actionObject.value;
+    return await this.wsGet('getMuteMicStatus', {}, {
+      walk: true,
+      storeAs: 'muteMicStatus',
+      emit: 'MuteMicStatusChanged'
+    });
   }
 
   /**
    * Requests a toggle of the "Mute" button in the app.
    */
   async toggleMuteMic(): Promise<void> {
-    const reply = await this.wsGet('toggleMuteMic', {});
-    this.mute_mic_status = reply.actionObject.value;
-    this.emit('MuteMicStatusChanged', reply.actionObject.value);
+    return await this.wsGet('toggleMuteMic', {}, {
+      walk: true,
+      storeAs: 'muteMicStatus',
+      emit: 'MuteMicStatusChanged'
+    });
   }
 
   /**
@@ -720,26 +760,26 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    * Requests the current status of the "Mute for me" button in the app (Soundboard menu).
    */
   async getMuteMemeForMeStatus(): Promise<boolean> {
-    if (this.mute_meme_for_me_status !== null) {
-      return this.mute_meme_for_me_status;
+    if (this.voicemodState.muteMemeForMeStatus != null) {
+      return this.voicemodState.muteMemeForMeStatus;
     }
 
-    const reply = await this.wsGet('getMuteMemeForMeStatus', {});
-    this.mute_meme_for_me_status = reply.actionObject.value;
-    this.emit('MuteMemeForMeStatusChanged', reply.actionObject.value);
-
-    return reply.actionObject.value;
+    return await this.wsGet('getMuteMemeForMeStatus', {}, {
+      walk: true,
+      storeAs: 'muteMemeForMeStatus',
+      emit: 'MuteMemeForMeStatusChanged'
+    });
   }
 
   /**
    * Requests a toggle of the "Mute for me" button in the app (Soundboard menu).
    */
   async toggleMuteMemeForMe(): Promise<boolean> {
-    const reply = await this.wsGet('toggleMuteMemeForMe', {});
-    this.mute_meme_for_me_status = reply.actionObject.value;
-    this.emit('MuteMemeForMeStatusChanged', reply.actionObject.value);
-
-    return reply.actionObject.value;
+    return await this.wsGet('toggleMuteMemeForMe', {}, {
+      walk: true,
+      storeAs: 'muteMemeForMeStatus',
+      emit: 'MuteMemeForMeStatusChanged'
+    });
   }
 
   /**
@@ -760,19 +800,19 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
   }
 
   /**
-   * @param voice_id The ID of the voice to change to
+   * @param id The voice id of the voice to change to
    */
-  private async onVoiceChange(voice_id: string) {
-    this.current_voice = voice_id;
-    this.emit('VoiceChanged', await this.getVoiceFromID(voice_id));
+  private async onVoiceChange(id: string) {
+    this.voicemodState.currentVoice = id;
+    this.emit('VoiceChanged', await this.getVoiceFromId(id));
   }
 
   /**
    * Gets a voice from the voice list by ID
    *
-   * @param voice_id The ID of the voice to get
+   * @param id The voice ID of the voice to get
    */
-  private async getVoiceFromID(voice_id: string): Promise<Voice> {
+  private async getVoiceFromId(id: string): Promise<Voice> {
 
     // We always need to have a current voice list - if we don't, we might
     // run into issues where we try to get a voice that doesn't exist in cache (yet)
@@ -781,8 +821,8 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
       throw new Error('No voices found');
     }
 
-    this.voiceList = voices;
-    return this.voiceList.filter((voice) => voice.id === voice_id)[0];
+    this.voicemodState.voiceList = voices;
+    return this.voicemodState.voiceList.filter(voice => voice.id === id)[0];
   }
 
   /**
@@ -790,12 +830,12 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    *
    * @param soundboard_id The ID of the soundboard to get
    */
-  private async getSoundboardFromID(soundboard_id: string): Promise<Soundboard> {
+  private async getSoundboardFromId(soundboard_id: string): Promise<Soundboard> {
     const soundboards = await this.getAllSoundboard();
     if (soundboards == null) {
       throw new Error('No soundboards found');
     }
-    this.soundboards = soundboards;
+    this.voicemodState.soundboards = soundboards;
 
     return soundboards.filter((soundboard) => soundboard.id === soundboard_id)[0];
   }

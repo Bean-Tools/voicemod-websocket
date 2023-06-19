@@ -252,3 +252,24 @@ export type SelectVoiceMode =
   | 'FreeVoices'
   | 'FavoriteVoices'
   | 'CustomVoices';
+
+export type VoiceState = {
+  port?: number;
+
+  voiceList?: Voice[];
+  currentVoice?: string;
+
+  user?: string;
+  userLicense?: LicenseType;
+
+  soundboards?: Soundboard[];
+  activeSoundboard?: string;
+
+  memes?: Meme[];
+
+  hearMyselfStatus?: boolean;
+  voiceChangerStatus?: boolean;
+  backgroundEffectsStatus?: boolean;
+  muteMemeForMeStatus?: boolean;
+  muteMicStatus?: boolean;
+}
