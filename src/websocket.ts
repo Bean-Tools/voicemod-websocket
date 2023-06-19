@@ -532,6 +532,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
     const getMemesResponse = await this.wsGet('getMemes', {});
     this.memes = getMemesResponse.actionObject.memes;
     this.emit('MemeListChanged', getMemesResponse.actionObject.memes);
+
     return getMemesResponse.actionObject.memes;
   }
 
@@ -540,7 +541,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    *
    * @param id The ID of the bitmap to get
    */
-  getBitmap(id: string, type: 'voice' | 'meme'): Promise<Bitmap> {
+  async getBitmap(id: string, type: 'voice' | 'meme'): Promise<Bitmap> {
     let payload;
     if (type === 'voice') {
       payload = { voiceID: id };
@@ -549,9 +550,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
     } else {
       return Promise.reject('Invalid type');
     }
-    return this.wsGet('getBitmap', payload).then((bitmap: Bitmap) => {
-      return bitmap;
-    });
+    return await this.wsGet('getBitmap', payload);
   }
 
   /**
