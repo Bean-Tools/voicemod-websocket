@@ -622,17 +622,15 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
   /**
    * Requests the current state of the "Voice Changer" button in the app.
    */
-  getVoiceChangerStatus(): Promise<boolean> {
+  async getVoiceChangerStatus(): Promise<boolean> {
     if (this.voice_changer_status !== null) {
-      return Promise.resolve(this.voice_changer_status);
+      return this.voice_changer_status;
     }
+    const getVoiceChangerStatusResponse = await this.wsGet('getVoiceChangerStatus', {});
+    this.voice_changer_status = getVoiceChangerStatusResponse.actionObject.value;
+    this.emit('VoiceChangerStatusChanged', getVoiceChangerStatusResponse.actionObject.value);
 
-    return this.wsGet('getVoiceChangerStatus', {}).then((status) => {
-      this.voice_changer_status = status.actionObject.value;
-      this.emit('VoiceChangerStatusChanged', status.actionObject.value);
-
-      return status.actionObject.value;
-    });
+    return getVoiceChangerStatusResponse.actionObject.value;
   }
 
   /**
