@@ -43,11 +43,9 @@ import {
  * port, but rather a range of ports where one *might* be open.
  *
  * Yeah. That look on your face? That's the same look I had.
- *
- * @type {number[]}
  */
-const possible_ports = [
-  59129, 20000, 39273, 42152, 43782, 46667, 35679, 37170, 38501, 33952, 30546,
+const possible_ports : number[] = [
+  59129, 20000, 39273, 42152, 43782, 46667, 35679, 37170, 38501, 33952, 30546
 ];
 
 const action_map: { [key: string]: keyof EventTypes } = {
