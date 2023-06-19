@@ -594,17 +594,16 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
   /**
    * Requests the current status of the "Hear my voice" button in the app.
    */
-  getHearMyselfStatus(): Promise<boolean> {
+  async getHearMyselfStatus(): Promise<boolean> {
     if (this.hear_myself_status !== null) {
-      return Promise.resolve(this.hear_myself_status);
+      return this.hear_myself_status;
     }
 
-    return this.wsGet('getHearMyselfStatus', {}).then((status) => {
-      this.hear_myself_status = status.actionObject.value;
-      this.emit('HearMyselfStatusChanged', status.actionObject.value);
+    const getHearMyselfStatusResponse = await this.wsGet('getHearMyselfStatus', {});
+    this.hear_myself_status = getHearMyselfStatusResponse.actionObject.value;
+    this.emit('HearMyselfStatusChanged', getHearMyselfStatusResponse.actionObject.value);
 
-      return status.actionObject.value;
-    });
+    return getHearMyselfStatusResponse.actionObject.value;
   }
 
   /**
