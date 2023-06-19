@@ -787,18 +787,17 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    *
    * @param voice_id The ID of the voice to get
    */
-  private getVoiceFromID(voice_id: string): Promise<Voice> {
+  private async getVoiceFromID(voice_id: string): Promise<Voice> {
+
     // We always need to have a current voice list - if we don't, we might
     // run into issues where we try to get a voice that doesn't exist in cache (yet)
+    const voices = await this.getVoices();
+    if (voices == null) {
+      throw new Error('No voices found');
+    }
 
-    return this.getVoices().then((voices) => {
-      if (voices === null) {
-        throw new Error('No voices found');
-      }
-      this.voiceList = voices;
-
-      return this.voiceList.filter((voice) => voice.id === voice_id)[0];
-    });
+    this.voiceList = voices;
+    return this.voiceList.filter((voice) => voice.id === voice_id)[0];
   }
 
   /**
