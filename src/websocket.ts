@@ -1,11 +1,10 @@
-import { WebSocket } from 'ws';
-
 // To avoid issues with similarly event type names, we
 // import the types from ws prefixed with WS
 import {
-  ErrorEvent as WSErrorEvent,
-  CloseEvent as WSCloseEvent,
-  MessageEvent as WSMessageEvent,
+  WebSocket,
+  type ErrorEvent as WSErrorEvent,
+  type CloseEvent as WSCloseEvent,
+  type MessageEvent as WSMessageEvent,
 } from 'ws';
 
 import EventEmitter from 'eventemitter3';
@@ -28,7 +27,7 @@ import {
 
 import actionMap from './util/action-map.js';
 
-import getVoicemodPort from './util/get-voicemod-port';
+import getVoicemodPort from './util/get-voicemod-port.js';
 
 /**
  * Voicemod WebSocket
