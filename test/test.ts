@@ -1,6 +1,6 @@
 import { exit } from 'process';
-import { Soundboard, Voice } from '../types';
-import VoicemodWebsocket from '../websocket';
+import { Soundboard, Voice } from '../src/types';
+import VoicemodWebsocket from '../src/websocket';
 
 import { config } from './config';
 
