@@ -665,12 +665,11 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    * Requests a toggle of the "Background Effects" button in the app.
    */
   async toggleBackgroundEffects(): Promise<boolean> {
-    return this.wsGet('toggleBackgroundEffects', {}).then((status) => {
-      this.background_effects_status = status.actionObject.value;
-      this.emit('BackgroundEffectStatusChanged', status.actionObject.value);
+    const toggleBackgroundEffectsResponse = await this.wsGet('toggleBackgroundEffects', {});
+    this.background_effects_status = toggleBackgroundEffectsResponse.actionObject.value;
+    this.emit('BackgroundEffectStatusChanged', toggleBackgroundEffectsResponse.actionObject.value);
 
-      return status.actionObject.value;
-    });
+    return toggleBackgroundEffectsResponse.actionObject.value;
   }
 
   /**
