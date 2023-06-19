@@ -254,8 +254,6 @@ export type SelectVoiceMode =
   | 'CustomVoices';
 
 export type VoiceState = {
-  port?: number;
-
   voiceList?: Voice[];
   currentVoice?: string;
 
