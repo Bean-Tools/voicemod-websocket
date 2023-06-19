@@ -37,17 +37,6 @@ import {
   VoiceParameterValue,
 } from './types';
 
-/**
- * List of possible ports to connect to. These are necessary
- * because the Voicemod API does not have one single, fixed
- * port, but rather a range of ports where one *might* be open.
- *
- * Yeah. That look on your face? That's the same look I had.
- */
-const possible_ports : number[] = [
-  59129, 20000, 39273, 42152, 43782, 46667, 35679, 37170, 38501, 33952, 30546
-];
-
 const action_map: { [key: string]: keyof EventTypes } = {
   ConnectionOpened: 'ConnectionOpened',
   ConnectionClosed: 'ConnectionClosed',
@@ -72,6 +61,46 @@ const action_map: { [key: string]: keyof EventTypes } = {
 
   SoundboardListChanged: 'SoundboardListChanged',
   MemeListChanged: 'MemeListChanged',
+};
+
+/**
+ * List of possible ports to connect to. These are necessary
+ * because the Voicemod API does not have one single, fixed
+ * port, but rather a range of ports where one *might* be open.
+ *
+ * Yeah. That look on your face? That's the same look I had.
+ */
+const possibleVoiceModPorts : number[] = [
+  59129, 20000, 39273, 42152, 43782, 46667, 35679, 37170, 38501, 33952, 30546
+];
+
+const getVoiceModePort = async (host: string) : Promise<number> => {
+  for (const port of possibleVoiceModPorts) {
+    const isValidPort = await new Promise<boolean>((resolve) => {
+      const ws = new WebSocket(`ws://${host}:${port}/v1`);
+
+      ws.onopen = () => {
+        ws.onopen = ws.onclose = ws.onerror = null;
+        ws.close();
+        resolve(true);
+      };
+      ws.onclose = () => {
+        ws.onopen = ws.onclose = ws.onerror = null;
+        resolve(false);
+      };
+
+      ws.onerror = () => {
+        ws.onopen = ws.onclose = ws.onerror = null;
+        resolve(false);
+      };
+    });
+
+    if (isValidPort === true) {
+      return port;
+    }
+  }
+
+  throw new Error('unable to find valid Voicemod port');
 };
 
 /**
@@ -140,15 +169,13 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    *
    * This method must be called before any other methods and
    * will test a number of ports to find one that is available
-   *
-   * @param api_host string The host to connect to
    */
   async connect(): Promise<void> {
     if (this.connected === true) {
       return;
     }
 
-    this.api_port = await this.findPort();
+    this.api_port = await getVoiceModePort(this.api_host);
 
     this.ws = new WebSocket(`ws://${this.api_host}:${this.api_port}/v1`);
 
@@ -192,46 +219,6 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
   private internalEvent<ReturnVal = unknown>(event_id: string): Promise<ReturnVal> {
     return new Promise((resolve) => {
       this.internal_events.once(event_id, resolve);
-    });
-  }
-
-  /**
-   * Finds an open Voicemod port to connect to
-   *
-   * @returns Promise<number> The port number if found, false if not
-   */
-  private async findPort(): Promise<number> {
-    for (const port of possible_ports) {
-      const available = await this.testPort(port);
-      if (available) {
-        return port;
-      }
-    }
-    throw new Error("Couldn't find an open port");
-  }
-
-  /**
-   * Tests a given port to see if it is open and a websocket can
-   * be connected to it
-   *
-   * @param port number The port to test
-   * @returns Promise<boolean> True if the port is open, false if not
-   */
-  private testPort(port: number): Promise<boolean> {
-    return new Promise((resolve) => {
-      const ws = new WebSocket(`ws://${this.api_host}:${port}/v1`);
-
-      ws.onopen = () => {
-        ws.close();
-        return resolve(true);
-      };
-      ws.onclose = () => {
-        return resolve(false);
-      };
-
-      ws.onerror = () => {
-        return resolve(false);
-      };
     });
   }
 
