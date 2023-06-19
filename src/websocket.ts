@@ -477,23 +477,22 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    * Requests all soundboards from the app with info for each
    * soundboard and each sound that is enabled based on the
    * current user's license.
-   *
-   * @returns Promise<VoicemodSoundboard[]>
    */
-  getAllSoundboard(): Promise<Soundboard[]> {
+  async getAllSoundboard(): Promise<Soundboard[]> {
     if (this.soundboards !== null) {
-      return Promise.resolve(this.soundboards);
+      return this.soundboards;
     }
 
-    return this.wsGet('getAllSoundboard', {})
-      .then((soundboard: ResponseGetAllSoundboard) => {
-        this.soundboards = soundboard.actionObject.soundboards;
-        this.emit('SoundboardListChanged', soundboard.actionObject.soundboards);
-        return soundboard.actionObject.soundboards;
-      })
-      .catch((error) => {
-        return [];
-      });
+    try {
+      const getAllSoundBoardResponse = await this.wsGet('getAllSoundboard', {});
+      this.soundboards = getAllSoundBoardResponse.actionObject.soundboards;
+      this.emit('SoundboardListChanged', getAllSoundBoardResponse.actionObject.soundboards);
+
+      return getAllSoundBoardResponse.actionObject.soundboards;
+
+    } catch {
+      return [];
+    }
   }
 
   /**
