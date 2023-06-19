@@ -580,7 +580,6 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
     await this.wsGet('loadVoice', payload);
     return await this.onVoiceChange(voiceID);
   }
-
   setVoice = this.loadVoice;
 
   /**
@@ -588,10 +587,8 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    *
    * @param mode Mode to use when selecting a voice
    */
-  selectRandomVoice(mode: SelectVoiceMode | null = null): Promise<void> {
-    return this.wsGet('selectRandomVoice', {
-      mode: mode,
-    });
+  async selectRandomVoice(mode: SelectVoiceMode | null = null): Promise<void> {
+    await this.wsGet('selectRandomVoice', { mode: mode });
   }
 
   /**
