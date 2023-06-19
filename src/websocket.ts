@@ -26,71 +26,9 @@ import {
   VoiceState
 } from './types';
 
-const action_map: { [key: string]: keyof EventTypes } = {
-  ConnectionOpened: 'ConnectionOpened',
-  ConnectionClosed: 'ConnectionClosed',
-  ConnectionError: 'ConnectionError',
+import actionMap from './util/action-map.js';
 
-  ClientRegistered: 'ClientRegistered',
-  ClientRegistrationFailed: 'ClientRegistrationFailed',
-  ClientRegistrationPending: 'ClientRegistrationPending',
-
-  UserChanged: 'UserChanged',
-  UserLicenseChanged: 'UserLicenseChanged',
-
-  VoiceChanged: 'VoiceChanged',
-  VoiceListChanged: 'VoiceListChanged',
-  VoiceChangerStatusChanged: 'VoiceChangerStatusChanged',
-  VoiceParameterChanged: 'VoiceParameterChanged',
-
-  HearMyselfStatusChanged: 'HearMyselfStatusChanged',
-  BackgroundEffectStatusChanged: 'BackgroundEffectStatusChanged',
-  MuteMicStatusChanged: 'MuteMicStatusChanged',
-  BadLanguageStatusChanged: 'BadLanguageStatusChanged',
-
-  SoundboardListChanged: 'SoundboardListChanged',
-  MemeListChanged: 'MemeListChanged',
-};
-
-/**
- * List of possible ports to connect to. These are necessary
- * because the Voicemod API does not have one single, fixed
- * port, but rather a range of ports where one *might* be open.
- *
- * Yeah. That look on your face? That's the same look I had.
- */
-const possibleVoiceModPorts : number[] = [
-  59129, 20000, 39273, 42152, 43782, 46667, 35679, 37170, 38501, 33952, 30546
-];
-
-const getVoiceModePort = async (host: string) : Promise<number> => {
-  for (const port of possibleVoiceModPorts) {
-    const isValidPort = await new Promise<boolean>((resolve) => {
-      const ws = new WebSocket(`ws://${host}:${port}/v1`);
-
-      ws.onopen = () => {
-        ws.onopen = ws.onclose = ws.onerror = null;
-        ws.close();
-        resolve(true);
-      };
-      ws.onclose = () => {
-        ws.onopen = ws.onclose = ws.onerror = null;
-        resolve(false);
-      };
-
-      ws.onerror = () => {
-        ws.onopen = ws.onclose = ws.onerror = null;
-        resolve(false);
-      };
-    });
-
-    if (isValidPort === true) {
-      return port;
-    }
-  }
-
-  throw new Error('unable to find valid Voicemod port');
-};
+import getVoicemodPort from './util/get-voicemod-port';
 
 /**
  * Voicemod WebSocket
@@ -119,8 +57,8 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
     timeout: number
   };
 
-  private external_listeners: string[];
-  private internal_events = new EventEmitter();
+  private externalListeners: string[] = [];
+  private internalEvents = new EventEmitter();
 
   private connected: boolean;
 
@@ -138,7 +76,6 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
       timeout
     };
 
-    this.external_listeners = [];
     this.connected = false;
   }
 
@@ -153,7 +90,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
       return;
     }
 
-    const port = await getVoiceModePort(this.options.host);
+    const port = await getVoicemodPort(this.options.host);
 
     this.ws = new WebSocket(`ws://${this.options.host}:${port}/v1`);
 
@@ -169,7 +106,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
   disconnect(): void {
     if (this.connected !== false && this.ws !== null) {
       this.ws.close();
-      this.internal_events.removeAllListeners();
+      this.internalEvents.removeAllListeners();
 
       this.emit('ConnectionClosed');
     }
@@ -179,20 +116,20 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    * Stop listening for any external event for the Voicemod API
    */
   clearListeners() {
-    for (const event_name of this.external_listeners) {
-      this.internal_events.removeAllListeners(event_name);
+    for (const eventName of this.externalListeners) {
+      this.internalEvents.removeAllListeners(eventName);
     }
   }
 
   /**
    * Listen for an event from the Voicemod API
    *
-   * @param event_name The name of the event to listen for
+   * @param id The name of the event to listen for
    * @returns The event data
    */
-  private internalEvent<ReturnVal = unknown>(event_id: string): Promise<ReturnVal> {
+  private internalEvent<ReturnVal = unknown>(id: string): Promise<ReturnVal> {
     return new Promise((resolve) => {
-      this.internal_events.once(event_id, resolve);
+      this.internalEvents.once(id, resolve);
     });
   }
 
@@ -204,12 +141,12 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
       this.emit('ClientRegistrationPending');
 
     } else if (data.action && data.action === 'registerClient') {
-      this.internal_events.emit(data.id, data);
+      this.internalEvents.emit(data.id, data);
 
     } else if (data.id || data.actionID) {
       // Events triggered by us
-      this.emit(action_map[data.actionType], data.actionObject);
-      this.internal_events.emit(data.id || data.actionID, data);
+      this.emit(actionMap[data.actionType], data.actionObject);
+      this.internalEvents.emit(data.id || data.actionID, data);
 
     } else if (data.action && data.action !== null && data.action.endsWith('Event')) {
       // Events triggered by the app
@@ -296,16 +233,16 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
       throw new Error('Not connected');
     }
 
-    const event_id = Math.random().toString(36).substring(0, 16);
+    const id = Math.random().toString(36).substring(0, 16);
     this.ws.send(
       JSON.stringify({
         action,
-        id: event_id,
+        id: id,
         payload: payload,
       }),
     );
 
-    return event_id;
+    return id;
   }
 
   /**
@@ -367,13 +304,13 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
 
     try {
       await this.registerClient(this.options.clientKey);
-      this.internal_events.emit('Connected');
+      this.internalEvents.emit('Connected');
       this.emit('Connected');
       return true;
 
     } catch {
       this.emit('ClientRegistrationFailed');
-      this.internal_events.emit('Disconnected');
+      this.internalEvents.emit('Disconnected');
       return false;
     }
   }
@@ -824,15 +761,15 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
   /**
    * Gets a soundboard from the soundboard list by ID
    *
-   * @param soundboard_id The ID of the soundboard to get
+   * @param id The ID of the soundboard to get
    */
-  private async getSoundboardFromId(soundboard_id: string): Promise<Soundboard> {
+  private async getSoundboardFromId(id: string): Promise<Soundboard> {
     const soundboards = await this.getAllSoundboard();
     if (soundboards == null) {
       throw new Error('No soundboards found');
     }
     this.voicemodState.soundboards = soundboards;
 
-    return soundboards.filter((soundboard) => soundboard.id === soundboard_id)[0];
+    return soundboards.filter((soundboard) => soundboard.id === id)[0];
   }
 }
