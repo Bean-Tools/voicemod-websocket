@@ -345,20 +345,20 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
     // TODO - Clear listeners
   }
 
-  private onOpen(): Promise<boolean> {
+  private async onOpen(): Promise<boolean> {
     this.emit('ConnectionOpened');
 
-    return this.registerClient(this.client_key)
-      .then((register) => {
-        this.internal_events.emit('Connected');
-        this.emit('Connected');
-        return true;
-      })
-      .catch((error) => {
-        this.emit('ClientRegistrationFailed');
-        this.internal_events.emit('Disconnected');
-        return false;
-      });
+    try {
+      await this.registerClient(this.client_key);
+      this.internal_events.emit('Connected');
+      this.emit('Connected');
+      return true;
+
+    } catch {
+      this.emit('ClientRegistrationFailed');
+      this.internal_events.emit('Disconnected');
+      return false;
+    }
   }
 
   private onDisconnect() {
