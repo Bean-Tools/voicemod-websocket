@@ -649,17 +649,16 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
   /**
    * Requests the current state of the "Background Effects" button in the app.
    */
-  getBackgroundEffectsStatus(): Promise<boolean> {
+  async getBackgroundEffectsStatus(): Promise<boolean> {
     if (this.background_effects_status !== null) {
-      return Promise.resolve(this.background_effects_status);
+      return this.background_effects_status;
     }
 
-    return this.wsGet('getBackgroundEffectStatus', {}).then((status) => {
-      this.background_effects_status = status.actionObject.value;
-      this.emit('BackgroundEffectStatusChanged', status.actionObject.value);
+    const getBackgroundEffectStatusResponse = await this.wsGet('getBackgroundEffectStatus', {});
+    this.background_effects_status = getBackgroundEffectStatusResponse.actionObject.value;
+    this.emit('BackgroundEffectStatusChanged', getBackgroundEffectStatusResponse.actionObject.value);
 
-      return status.actionObject.value;
-    });
+    return getBackgroundEffectStatusResponse.actionObject.value;
   }
 
   /**
