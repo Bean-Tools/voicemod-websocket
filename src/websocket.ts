@@ -498,32 +498,27 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
   /**
    * This message is triggered in response to a change in of a currently
    * active soundboard.
-   *
-   * @returns Promise<VoicemodSoundboard>
    */
-  getActiveSoundboardProfile(): Promise<Soundboard> {
-    if (this.active_soundboard !== null) {
-      return Promise.resolve(this.getSoundboardFromID(this.active_soundboard));
+  async getActiveSoundboardProfile(): Promise<Soundboard> {
+    if (this.active_soundboard != null) {
+      return await this.getSoundboardFromID(this.active_soundboard);
     }
 
-    return this.getAllSoundboard().then(async (soundboards) => {
-      this.soundboards = soundboards;
+    const soundboards = await this.getAllSoundboard();
+    this.soundboards = soundboards;
 
-      return this.wsGet('getActiveSoundboardProfile', {}).then(
-        async (soundboard: ResponseGetActiveSoundboard) => {
-          const activeSoundboard = await this.getSoundboardFromID(
-            soundboard.actionObject.profileId,
-          );
+    const getActiveSoundboardProfileResponse = await this.wsGet('getActiveSoundboardProfile', {});
 
-          if (activeSoundboard) {
-            this.active_soundboard = activeSoundboard ? activeSoundboard.id : null;
-            return activeSoundboard;
-          } else {
-            throw new Error('Could not find active soundboard');
-          }
-        },
-      );
-    });
+    const activeSoundboard = await this.getSoundboardFromID(
+      getActiveSoundboardProfileResponse.actionObject.profileId,
+    );
+
+    if (activeSoundboard) {
+      this.active_soundboard = activeSoundboard.id;
+      return activeSoundboard;
+    } else {
+      throw new Error('Could not find active soundboard');
+    }
   }
 
   /**
