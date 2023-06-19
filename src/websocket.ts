@@ -524,16 +524,15 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    * sounds (the user has added or removed a meme), and in response to
    * a getMemes message.
    */
-  getMemes(): Promise<Meme[]> {
+  async getMemes(): Promise<Meme[]> {
     if (this.memes !== null) {
-      return Promise.resolve(this.memes);
+      return this.memes;
     }
 
-    return this.wsGet('getMemes', {}).then((memes: ResponseGetMemes) => {
-      this.memes = memes.actionObject.memes;
-      this.emit('MemeListChanged', memes.actionObject.memes);
-      return memes.actionObject.memes;
-    });
+    const getMemesResponse = await this.wsGet('getMemes', {});
+    this.memes = getMemesResponse.actionObject.memes;
+    this.emit('MemeListChanged', getMemesResponse.actionObject.memes);
+    return getMemesResponse.actionObject.memes;
   }
 
   /**
