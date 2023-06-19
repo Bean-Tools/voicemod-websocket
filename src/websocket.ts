@@ -114,7 +114,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
   private user_license: null | LicenseType = null;
 
   private soundboards: null | Soundboard[] = null;
-  private activeSoundboard: null | string = null;
+  private active_soundboard: null | string = null;
 
   private memes: null | Meme[] = null;
 
@@ -535,8 +535,8 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    * @returns Promise<VoicemodSoundboard>
    */
   getActiveSoundboardProfile(): Promise<Soundboard> {
-    if (this.activeSoundboard !== null) {
-      return Promise.resolve(this.getSoundboardFromID(this.activeSoundboard));
+    if (this.active_soundboard !== null) {
+      return Promise.resolve(this.getSoundboardFromID(this.active_soundboard));
     }
 
     return this.getAllSoundboard().then(async (soundboards) => {
@@ -549,7 +549,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
           );
 
           if (activeSoundboard) {
-            this.activeSoundboard = activeSoundboard ? activeSoundboard.id : null;
+            this.active_soundboard = activeSoundboard ? activeSoundboard.id : null;
             return activeSoundboard;
           } else {
             throw new Error('Could not find active soundboard');
