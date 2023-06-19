@@ -458,26 +458,19 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
 
   /**
    * Requests the voice that is currently selected in the app.
-   *
-   * @returns Promise<VoicemodVoice>
    */
-  getCurrentVoice(): Promise<Voice> {
+  async getCurrentVoice(): Promise<Voice> {
     if (this.current_voice !== null) {
-      return this.getVoiceFromID(this.current_voice);
+      return await this.getVoiceFromID(this.current_voice);
     }
+    const getCurrentVoiceResponse = await this.wsGet('getCurrentVoice', {});
+    const voiceId = getCurrentVoiceResponse.actionObject.voiceID;
+    this.current_voice = voiceId;
 
-    return this.wsGet('getCurrentVoice', {}).then(
-      async (current_voice: ResponseGetCurrentVoice) => {
-        const voiceId = current_voice.actionObject.voiceID;
+    const voice = await this.getVoiceFromID(voiceId);
+    this.emit('VoiceChanged', voice);
 
-        this.current_voice = voiceId;
-
-        const voice = await this.getVoiceFromID(this.current_voice);
-        this.emit('VoiceChanged', voice);
-
-        return voice;
-      },
-    );
+    return voice;
   }
 
   /**
