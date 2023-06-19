@@ -805,14 +805,13 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    *
    * @param soundboard_id The ID of the soundboard to get
    */
-  private getSoundboardFromID(soundboard_id: string): Promise<Soundboard> {
-    return this.getAllSoundboard().then((soundboards) => {
-      if (soundboards === null) {
-        throw new Error('No soundboards found');
-      }
-      this.soundboards = soundboards;
+  private async getSoundboardFromID(soundboard_id: string): Promise<Soundboard> {
+    const soundboards = await this.getAllSoundboard();
+    if (soundboards == null) {
+      throw new Error('No soundboards found');
+    }
+    this.soundboards = soundboards;
 
-      return soundboards.filter((soundboard) => soundboard.id === soundboard_id)[0];
-    });
+    return soundboards.filter((soundboard) => soundboard.id === soundboard_id)[0];
   }
 }
