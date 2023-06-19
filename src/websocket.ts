@@ -422,20 +422,17 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
 
   /**
    * Requests user license information.
-   *
-   * @returns Promise<VoicemodResponseGetUserLicense>
    */
-  getUserLicense(): Promise<LicenseType> {
+  async getUserLicense(): Promise<LicenseType> {
     if (this.user_license !== null) {
-      return Promise.resolve(this.user_license);
+      return this.user_license;
     }
 
-    return this.wsGet('getUserLicense', {}).then((userLicense: ResponseGetUserLicense) => {
-      this.user_license = userLicense.actionObject.licenseType;
-      this.emit('UserLicenseChanged', userLicense.actionObject.licenseType);
+    const userLicenseResponse = await this.wsGet('getUserLicense', {});
+    this.user_license = userLicenseResponse.actionObject.licenseType;
+    this.emit('UserLicenseChanged', userLicenseResponse.actionObject.licenseType);
 
-      return userLicense.actionObject.licenseType;
-    });
+    return userLicenseResponse.actionObject.licenseType;
   }
 
   /**
