@@ -715,8 +715,8 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    * @param filename The file name of the sound we want to play
    * @param isKeyDown True if sending a KeyDown action
    */
-  playMeme(filename: string, isKeyDown: boolean = true): Promise<void> {
-    return this.wsGet('playMeme', {
+  async playMeme(filename: string, isKeyDown: boolean = true): Promise<void> {
+    await this.wsGet('playMeme', {
       payload: {
         filename: filename,
         isKeyDown: isKeyDown,
