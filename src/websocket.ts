@@ -611,15 +611,12 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    *
    * @param state The new status of the button
    */
-  toggleHearMyVoice(state: boolean): Promise<boolean> {
-    return this.wsGet('toggleHearMyVoice', {
-      value: state,
-    }).then((status: ResponseToggleHearMyself) => {
-      this.hear_myself_status = status.actionObject.value;
-      this.emit('HearMyselfStatusChanged', status.actionObject.value);
+  async toggleHearMyVoice(state: boolean): Promise<boolean> {
+    const toggleHearMyVoiceResponse = await this.wsGet('toggleHearMyVoice', { value: state });
+    this.hear_myself_status = toggleHearMyVoiceResponse.actionObject.value;
+    this.emit('HearMyselfStatusChanged', toggleHearMyVoiceResponse.actionObject.value);
 
-      return status.actionObject.value;
-    });
+    return toggleHearMyVoiceResponse.actionObject.value;
   }
 
   /**
