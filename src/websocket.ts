@@ -727,8 +727,8 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
   /**
    * Requests playback stop of all meme sounds currently playing.
    */
-  stopMemes(): Promise<void> {
-    return this.wsGet('stopAllMemeSounds', {});
+  async stopMemes(): Promise<void> {
+    return await this.wsGet('stopAllMemeSounds', {});
   }
 
   /**
