@@ -167,16 +167,12 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    * Disconnect from the Voicemod API
    */
   disconnect(): void {
-    if (this.connected === false || this.ws === null) {
-      return;
+    if (this.connected !== false && this.ws !== null) {
+      this.ws.close();
+      this.internal_events.removeAllListeners();
+
+      this.emit('ConnectionClosed');
     }
-
-    this.ws.close();
-    this.internal_events.removeAllListeners();
-
-    this.emit('ConnectionClosed');
-
-    return;
   }
 
   /**
