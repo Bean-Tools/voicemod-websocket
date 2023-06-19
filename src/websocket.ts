@@ -15,26 +15,14 @@ import {
   RegisterClientResponse,
   Voice,
   EventTypes,
-  ResponseGetVoices,
-  ResponseGetCurrentVoice,
-  ResponseMuteMicStatus,
   MapValueToArgsArray,
   SelectVoiceMode,
-  ResponseGetUser,
   LicenseType,
-  ResponseGetUserLicense,
-  ResponseGetRotatoryVoicesRemainingTime,
-  ResponseGetAllSoundboard,
   Soundboard,
-  ResponseGetActiveSoundboard,
   Meme,
-  ResponseGetMemes,
   Bitmap,
-  ResponseToggleHearMyself,
-  ResponseToggleVoiceChanger,
-  ResponseSetCurrentVoiceParameter,
   LoadVoicePayload,
-  VoiceParameterValue,
+  VoiceParameterValue
 } from './types';
 
 const action_map: { [key: string]: keyof EventTypes } = {
