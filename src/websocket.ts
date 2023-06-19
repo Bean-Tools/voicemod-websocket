@@ -763,16 +763,15 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    * @param parameterName The name of the parameter to change
    * @param parameterValue The value(s) of the parameter to change
    */
-  setCurrentVoiceParameter(
+  async setCurrentVoiceParameter(
     parameterName: string,
     parameterValue: VoiceParameterValue,
   ): Promise<void> {
-    return this.wsGet('setCurrentVoiceParameter', {
+    const setCurrentVoiceParameterResponse = await this.wsGet('setCurrentVoiceParameter', {
       parameterName: parameterName,
       parameterValue: parameterValue,
-    }).then((response: ResponseSetCurrentVoiceParameter) => {
-      this.emit('VoiceParameterChanged', response.actionObject);
     });
+    this.emit('VoiceParameterChanged', setCurrentVoiceParameterResponse.actionObject);
   }
 
   /**
