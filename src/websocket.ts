@@ -438,15 +438,10 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
   /**
    * Requests the remaining time (in seconds) before a refresh is
    * made to the selection of voices that are available under the free version.
-   *
-   * @returns Promise<number>
    */
-  getRotatoryVoicesRemainingTime(): Promise<number> {
-    return this.wsGet('getRotatoryVoicesRemainingTime', {}).then(
-      (remaining_time: ResponseGetRotatoryVoicesRemainingTime) => {
-        return remaining_time.actionObject.remainingTime;
-      },
-    );
+  async getRotatoryVoicesRemainingTime(): Promise<number> {
+    const getRotatoryVoicesRemainingTimeResponse = await this.wsGet('getRotatoryVoicesRemainingTime', {});
+    return getRotatoryVoicesRemainingTimeResponse.actionObject.remainingTime;
   }
 
   /**
