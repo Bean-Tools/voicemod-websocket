@@ -701,8 +701,8 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    *
    * @param state The new status of the button
    */
-  setBeepSound(state: boolean): Promise<void> {
-    return this.wsGet('setBeepSound', {
+  async setBeepSound(state: boolean): Promise<void> {
+    await this.wsGet('setBeepSound', {
       payload: {
         badLanguage: state === true ? 1 : 0,
       },
