@@ -689,11 +689,10 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
   /**
    * Requests a toggle of the "Mute" button in the app.
    */
-  toggleMuteMic(): Promise<void> {
-    return this.wsGet('toggleMuteMic', {}).then((status: ResponseMuteMicStatus) => {
-      this.mute_mic_status = status.actionObject.value;
-      this.emit('MuteMicStatusChanged', status.actionObject.value);
-    });
+  async toggleMuteMic(): Promise<void> {
+    const toggleMuteMicResponse = await this.wsGet('toggleMuteMic', {});
+    this.mute_mic_status = toggleMuteMicResponse.actionObject.value;
+    this.emit('MuteMicStatusChanged', toggleMuteMicResponse.actionObject.value);
   }
 
   /**
