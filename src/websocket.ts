@@ -213,8 +213,8 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
   /**
    * Listen for an event from the Voicemod API
    *
-   * @param event_name string The name of the event to listen for
-   * @returns Promise<any> The event data
+   * @param event_name The name of the event to listen for
+   * @returns The event data
    */
   private internalEvent<ReturnVal = unknown>(event_id: string): Promise<ReturnVal> {
     return new Promise((resolve) => {
@@ -293,9 +293,9 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
   /**
    * Sends a message to the Voicemod API WebSocket
    *
-   * @param action  string  The name of the action
-   * @param payload any     The payload to send
-   * @returns string        The event ID of the message
+   * @param action  The name of the action
+   * @param payload The payload to send
+   * @returns       The event ID of the message
    */
   private wsSendMessage(action: string, payload: any = {}): string {
     if (this.ws === null || (this.connected === false && action !== 'registerClient')) {
@@ -317,9 +317,9 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
   /**
    * Sends a message to the Voicemod API WebSocket and waits for a response
    *
-   * @param action string The name of the action
-   * @param payload any The payload to send
-   * @returns Promise<any> The response payload
+   * @param action The name of the action
+   * @param payload The payload to send
+   * @returns The response payload
    */
   private async wsGet(action: string, payload: any = {}): Promise<any> {
     try {
@@ -376,9 +376,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
   /**
    * Authenticates the client against the Voicemod API
    *
-   * @param clientKey string The API key for the Control API
-   * @returns Promise<VoicemodRegisterClientResponse>
-   * @private
+   * @param clientKey The API key for the Control API
    */
   private async registerClient(clientKey: string): Promise<RegisterClientResponse> {
     try {
@@ -525,8 +523,6 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    * This message is triggered in response to a change in available meme
    * sounds (the user has added or removed a meme), and in response to
    * a getMemes message.
-   *
-   * @returns Promise<VoicemodMeme[]>
    */
   getMemes(): Promise<Meme[]> {
     if (this.memes !== null) {
@@ -543,8 +539,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
   /**
    * Requests the icon for a given voice or meme.
    *
-   * @param id string The ID of the bitmap to get
-   * @returns Promise<VoicemodBitmap>
+   * @param id The ID of the bitmap to get
    */
   getBitmap(id: string, type: 'voice' | 'meme'): Promise<Bitmap> {
     let payload;
@@ -563,10 +558,9 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
   /**
    * Requests a change to the user's selected voice
    *
-   * @param voiceID string The ID of the voice to change to
-   * @param parameterName string The name of the parameter to change
-   * @param parameterValue string The value of the parameter to change
-   * @returns Promise<void>
+   * @param voiceID The ID of the voice to change to
+   * @param parameterName The name of the parameter to change
+   * @param parameterValue The value of the parameter to change
    */
   loadVoice(
     voiceID: string,
@@ -595,7 +589,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
   /**
    * Requests a change to a randomly selected voice
    *
-   * @param mode VoicemodSelectVoiceMode Mode to use when selecting a voice
+   * @param mode Mode to use when selecting a voice
    */
   selectRandomVoice(mode: SelectVoiceMode | null = null): Promise<void> {
     return this.wsGet('selectRandomVoice', {
@@ -605,8 +599,6 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
 
   /**
    * Requests the current status of the "Hear my voice" button in the app.
-   *
-   * @returns Promise<boolean>
    */
   getHearMyselfStatus(): Promise<boolean> {
     if (this.hear_myself_status !== null) {
@@ -624,8 +616,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
   /**
    * Requests a toggle of the "Hear my voice" button in the app.
    *
-   * @param state boolean The new status of the button
-   * @returns Promise<boolean>
+   * @param state The new status of the button
    */
   toggleHearMyVoice(state: boolean): Promise<boolean> {
     return this.wsGet('toggleHearMyVoice', {
@@ -640,8 +631,6 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
 
   /**
    * Requests the current state of the "Voice Changer" button in the app.
-   *
-   * @returns Promise<boolean>
    */
   getVoiceChangerStatus(): Promise<boolean> {
     if (this.voice_changer_status !== null) {
@@ -659,7 +648,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
   /**
    * Requests a toggle of the "Voice Changer" button in the app.
    *
-   * @param state boolean The new status of the button
+   * @param state The new status of the button
    */
   toggleVoiceChanger(state: boolean): Promise<boolean> {
     return this.wsGet('toggleVoiceChanger', {
@@ -674,8 +663,6 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
 
   /**
    * Requests the current state of the "Background Effects" button in the app.
-   *
-   * @returns Promise<boolean>
    */
   getBackgroundEffectsStatus(): Promise<boolean> {
     if (this.background_effects_status !== null) {
@@ -692,8 +679,6 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
 
   /**
    * Requests a toggle of the "Background Effects" button in the app.
-   *
-   * @returns Promise<boolean>
    */
   async toggleBackgroundEffects(): Promise<boolean> {
     return this.wsGet('toggleBackgroundEffects', {}).then((status) => {
@@ -706,8 +691,6 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
 
   /**
    * Requests the current state of the "Mute" button in the app.
-   *
-   * @returns Promise<boolean>
    */
   getMuteMicStatus(): Promise<boolean> {
     if (this.mute_mic_status !== null) {
@@ -723,8 +706,6 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
 
   /**
    * Requests a toggle of the "Mute" button in the app.
-   *
-   * @returns Promise<boolean>
    */
   toggleMuteMic(): Promise<void> {
     return this.wsGet('toggleMuteMic', {}).then((status: ResponseMuteMicStatus) => {
@@ -737,8 +718,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    * Requests a state change of the "beep" sound that is normally actioned by the user to censor
    * something he or she is saying.
    *
-   * @param state boolean The new status of the button
-   * @returns Promise<boolean>
+   * @param state The new status of the button
    */
   setBeepSound(state: boolean): Promise<void> {
     return this.wsGet('setBeepSound', {
@@ -751,8 +731,8 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
   /**
    * Requests playback of a meme sound.
    *
-   * @param filename string The file name of the sound we want to play
-   * @param isKeyDown boolean True if sending a KeyDown action
+   * @param filename The file name of the sound we want to play
+   * @param isKeyDown True if sending a KeyDown action
    */
   playMeme(filename: string, isKeyDown: boolean = true): Promise<void> {
     return this.wsGet('playMeme', {
@@ -765,8 +745,6 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
 
   /**
    * Requests playback stop of all meme sounds currently playing.
-   *
-   * @returns Promise<boolean>
    */
   stopMemes(): Promise<void> {
     return this.wsGet('stopAllMemeSounds', {});
@@ -774,8 +752,6 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
 
   /**
    * Requests the current status of the "Mute for me" button in the app (Soundboard menu).
-   *
-   * @returns Promise<boolean>
    */
   getMuteMemeForMeStatus(): Promise<boolean> {
     if (this.mute_meme_for_me_status !== null) {
@@ -793,8 +769,6 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
 
   /**
    * Requests a toggle of the "Mute for me" button in the app (Soundboard menu).
-   *
-   * @returns Promise<boolean>
    */
   toggleMuteMemeForMe(): Promise<boolean> {
     return this.wsGet('toggleMuteMemeForMe', {}).then((mute: ResponseMuteMicStatus) => {
@@ -809,9 +783,8 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
   /**
    * Requests a change of parameter for currently selected voice.
    *
-   * @param parameterName string The name of the parameter to change
-   * @param parameterValue {} The value(s) of the parameter to change
-   * @returns Promise<void>
+   * @param parameterName The name of the parameter to change
+   * @param parameterValue The value(s) of the parameter to change
    */
   setCurrentVoiceParameter(
     parameterName: string,
@@ -826,7 +799,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
   }
 
   /**
-   * @param voice_id string The ID of the voice to change to
+   * @param voice_id The ID of the voice to change to
    */
   private async onVoiceChange(voice_id: string) {
     this.current_voice = voice_id;
@@ -836,8 +809,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
   /**
    * Gets a voice from the voice list by ID
    *
-   * @param voice_id string The ID of the voice to get
-   * @returns Promise<VoicemodVoice>
+   * @param voice_id The ID of the voice to get
    */
   private getVoiceFromID(voice_id: string): Promise<Voice> {
     // We always need to have a current voice list - if we don't, we might
@@ -856,8 +828,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
   /**
    * Gets a soundboard from the soundboard list by ID
    *
-   * @param soundboard_id string The ID of the soundboard to get
-   * @returns Promise<VoicemodSoundboard>
+   * @param soundboard_id The ID of the soundboard to get
    */
   private getSoundboardFromID(soundboard_id: string): Promise<Soundboard> {
     return this.getAllSoundboard().then((soundboards) => {
