@@ -45,7 +45,6 @@ import {
  * Yeah. That look on your face? That's the same look I had.
  *
  * @type {number[]}
- * @private
  */
 const possible_ports = [
   59129, 20000, 39273, 42152, 43782, 46667, 35679, 37170, 38501, 33952, 30546,
@@ -83,19 +82,9 @@ const action_map: { [key: string]: keyof EventTypes } = {
  * For further documentation, see:
  * https://control-api.voicemod.net/api-reference/
  *
- * This is a partial implementation of the Voicemod API
- * and is not complete. It is only intended to be used
- * for the purposes of this project.
- *
- * This class is not intended to be used directly, but
- * rather through the VoicemodService class.
+ * This is a client to the Voicemod Control API.
  *
  * @class VoicemodWebSocket
- * @fires {connected} When the websocket connects
- * @fires {disconnected} When the websocket disconnects
- * @fires {voiceChange} When the voice changes
- * @fires {voiceListChange} When the list of voices changes
- * @fires {error} When an error occurs
  *
  * @example
  * const voicemod = new VoicemodWebSocket();
@@ -122,7 +111,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
   private voiceList: null | Voice[] = null;
 
   private user: null | string = null;
-  private userLicense: null | LicenseType = null;
+  private user_license: null | LicenseType = null;
 
   private soundboards: null | Soundboard[] = null;
   private activeSoundboard: null | string = null;
@@ -452,12 +441,12 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    * @returns Promise<VoicemodResponseGetUserLicense>
    */
   getUserLicense(): Promise<LicenseType> {
-    if (this.userLicense !== null) {
-      return Promise.resolve(this.userLicense);
+    if (this.user_license !== null) {
+      return Promise.resolve(this.user_license);
     }
 
     return this.wsGet('getUserLicense', {}).then((userLicense: ResponseGetUserLicense) => {
-      this.userLicense = userLicense.actionObject.licenseType;
+      this.user_license = userLicense.actionObject.licenseType;
       this.emit('UserLicenseChanged', userLicense.actionObject.licenseType);
 
       return userLicense.actionObject.licenseType;
