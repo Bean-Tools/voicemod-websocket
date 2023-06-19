@@ -380,20 +380,20 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    */
   private async registerClient(clientKey: string): Promise<RegisterClientResponse> {
     try {
-      const registerResponse = await this.wsGet('registerClient', {
+      const reply = await this.wsGet('registerClient', {
         clientKey: clientKey
       });
 
-      if (registerResponse && parseInt(registerResponse.payload.status.code) === 200) {
+      if (reply && parseInt(reply.payload.status.code) === 200) {
         this.connected = true;
-        this.emit('ClientRegistered', registerResponse);
+        this.emit('ClientRegistered', reply);
 
       } else {
         this.onDisconnect();
         this.emit('ClientRegistrationFailed');
       }
 
-      return registerResponse;
+      return reply;
 
     } catch {
       this.onDisconnect();
@@ -412,10 +412,10 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
       return this.user;
     }
 
-    const userResponse = await this.wsGet('getUser', {});
-    this.user = userResponse.actionObject.userId;
-    this.emit('UserChanged', userResponse.actionObject.userId);
-    return userResponse.actionObject.userId;
+    const reply = await this.wsGet('getUser', {});
+    this.user = reply.actionObject.userId;
+    this.emit('UserChanged', reply.actionObject.userId);
+    return reply.actionObject.userId;
   }
 
   /**
@@ -426,11 +426,11 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
       return this.user_license;
     }
 
-    const userLicenseResponse = await this.wsGet('getUserLicense', {});
-    this.user_license = userLicenseResponse.actionObject.licenseType;
-    this.emit('UserLicenseChanged', userLicenseResponse.actionObject.licenseType);
+    const reply = await this.wsGet('getUserLicense', {});
+    this.user_license = reply.actionObject.licenseType;
+    this.emit('UserLicenseChanged', reply.actionObject.licenseType);
 
-    return userLicenseResponse.actionObject.licenseType;
+    return reply.actionObject.licenseType;
   }
 
   /**
@@ -438,8 +438,8 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    * made to the selection of voices that are available under the free version.
    */
   async getRotatoryVoicesRemainingTime(): Promise<number> {
-    const getRotatoryVoicesRemainingTimeResponse = await this.wsGet('getRotatoryVoicesRemainingTime', {});
-    return getRotatoryVoicesRemainingTimeResponse.actionObject.remainingTime;
+    const reply = await this.wsGet('getRotatoryVoicesRemainingTime', {});
+    return reply.actionObject.remainingTime;
   }
 
   /**
@@ -447,11 +447,11 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    * voice selected in the app for the current user.
    */
   async getVoices(): Promise<Voice[]> {
-    const getVoicesResponse = await this.wsGet('getVoices', {});
-    this.voiceList = getVoicesResponse.actionObject.voices;
-    this.emit('VoiceListChanged', getVoicesResponse.actionObject.voices);
+    const reply = await this.wsGet('getVoices', {});
+    this.voiceList = reply.actionObject.voices;
+    this.emit('VoiceListChanged', reply.actionObject.voices);
 
-    return getVoicesResponse.actionObject.voices;
+    return reply.actionObject.voices;
   }
 
   /**
@@ -461,8 +461,8 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
     if (this.current_voice !== null) {
       return await this.getVoiceFromID(this.current_voice);
     }
-    const getCurrentVoiceResponse = await this.wsGet('getCurrentVoice', {});
-    const voiceId = getCurrentVoiceResponse.actionObject.voiceID;
+    const reply = await this.wsGet('getCurrentVoice', {});
+    const voiceId = reply.actionObject.voiceID;
     this.current_voice = voiceId;
 
     const voice = await this.getVoiceFromID(voiceId);
@@ -482,11 +482,11 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
     }
 
     try {
-      const getAllSoundBoardResponse = await this.wsGet('getAllSoundboard', {});
-      this.soundboards = getAllSoundBoardResponse.actionObject.soundboards;
-      this.emit('SoundboardListChanged', getAllSoundBoardResponse.actionObject.soundboards);
+      const reply = await this.wsGet('getAllSoundboard', {});
+      this.soundboards = reply.actionObject.soundboards;
+      this.emit('SoundboardListChanged', reply.actionObject.soundboards);
 
-      return getAllSoundBoardResponse.actionObject.soundboards;
+      return reply.actionObject.soundboards;
 
     } catch {
       return [];
@@ -505,11 +505,8 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
     const soundboards = await this.getAllSoundboard();
     this.soundboards = soundboards;
 
-    const getActiveSoundboardProfileResponse = await this.wsGet('getActiveSoundboardProfile', {});
-
-    const activeSoundboard = await this.getSoundboardFromID(
-      getActiveSoundboardProfileResponse.actionObject.profileId,
-    );
+    const reply = await this.wsGet('getActiveSoundboardProfile', {});
+    const activeSoundboard = await this.getSoundboardFromID(reply.actionObject.profileId);
 
     if (activeSoundboard) {
       this.active_soundboard = activeSoundboard.id;
@@ -529,11 +526,11 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
       return this.memes;
     }
 
-    const getMemesResponse = await this.wsGet('getMemes', {});
-    this.memes = getMemesResponse.actionObject.memes;
-    this.emit('MemeListChanged', getMemesResponse.actionObject.memes);
+    const reply = await this.wsGet('getMemes', {});
+    this.memes = reply.actionObject.memes;
+    this.emit('MemeListChanged', reply.actionObject.memes);
 
-    return getMemesResponse.actionObject.memes;
+    return reply.actionObject.memes;
   }
 
   /**
@@ -599,11 +596,11 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
       return this.hear_myself_status;
     }
 
-    const getHearMyselfStatusResponse = await this.wsGet('getHearMyselfStatus', {});
-    this.hear_myself_status = getHearMyselfStatusResponse.actionObject.value;
-    this.emit('HearMyselfStatusChanged', getHearMyselfStatusResponse.actionObject.value);
+    const reply = await this.wsGet('getHearMyselfStatus', {});
+    this.hear_myself_status = reply.actionObject.value;
+    this.emit('HearMyselfStatusChanged', reply.actionObject.value);
 
-    return getHearMyselfStatusResponse.actionObject.value;
+    return reply.actionObject.value;
   }
 
   /**
@@ -612,11 +609,11 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    * @param state The new status of the button
    */
   async toggleHearMyVoice(state: boolean): Promise<boolean> {
-    const toggleHearMyVoiceResponse = await this.wsGet('toggleHearMyVoice', { value: state });
-    this.hear_myself_status = toggleHearMyVoiceResponse.actionObject.value;
-    this.emit('HearMyselfStatusChanged', toggleHearMyVoiceResponse.actionObject.value);
+    const reply = await this.wsGet('toggleHearMyVoice', { value: state });
+    this.hear_myself_status = reply.actionObject.value;
+    this.emit('HearMyselfStatusChanged', reply.actionObject.value);
 
-    return toggleHearMyVoiceResponse.actionObject.value;
+    return reply.actionObject.value;
   }
 
   /**
@@ -626,11 +623,11 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
     if (this.voice_changer_status !== null) {
       return this.voice_changer_status;
     }
-    const getVoiceChangerStatusResponse = await this.wsGet('getVoiceChangerStatus', {});
-    this.voice_changer_status = getVoiceChangerStatusResponse.actionObject.value;
-    this.emit('VoiceChangerStatusChanged', getVoiceChangerStatusResponse.actionObject.value);
+    const reply = await this.wsGet('getVoiceChangerStatus', {});
+    this.voice_changer_status = reply.actionObject.value;
+    this.emit('VoiceChangerStatusChanged', reply.actionObject.value);
 
-    return getVoiceChangerStatusResponse.actionObject.value;
+    return reply.actionObject.value;
   }
 
   /**
@@ -639,11 +636,11 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    * @param state The new status of the button
    */
   async toggleVoiceChanger(state: boolean): Promise<boolean> {
-    const toggleVoiceChangerResponse = await this.wsGet('toggleVoiceChanger', { value: state });
-    this.voice_changer_status = toggleVoiceChangerResponse.actionObject.value;
-    this.emit('VoiceChangerStatusChanged', toggleVoiceChangerResponse.actionObject.value);
+    const reply = await this.wsGet('toggleVoiceChanger', { value: state });
+    this.voice_changer_status = reply.actionObject.value;
+    this.emit('VoiceChangerStatusChanged', reply.actionObject.value);
 
-    return toggleVoiceChangerResponse.actionObject.value;
+    return reply.actionObject.value;
   }
 
   /**
@@ -654,22 +651,22 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
       return this.background_effects_status;
     }
 
-    const getBackgroundEffectStatusResponse = await this.wsGet('getBackgroundEffectStatus', {});
-    this.background_effects_status = getBackgroundEffectStatusResponse.actionObject.value;
-    this.emit('BackgroundEffectStatusChanged', getBackgroundEffectStatusResponse.actionObject.value);
+    const reply = await this.wsGet('getBackgroundEffectStatus', {});
+    this.background_effects_status = reply.actionObject.value;
+    this.emit('BackgroundEffectStatusChanged', reply.actionObject.value);
 
-    return getBackgroundEffectStatusResponse.actionObject.value;
+    return reply.actionObject.value;
   }
 
   /**
    * Requests a toggle of the "Background Effects" button in the app.
    */
   async toggleBackgroundEffects(): Promise<boolean> {
-    const toggleBackgroundEffectsResponse = await this.wsGet('toggleBackgroundEffects', {});
-    this.background_effects_status = toggleBackgroundEffectsResponse.actionObject.value;
-    this.emit('BackgroundEffectStatusChanged', toggleBackgroundEffectsResponse.actionObject.value);
+    const reply = await this.wsGet('toggleBackgroundEffects', {});
+    this.background_effects_status = reply.actionObject.value;
+    this.emit('BackgroundEffectStatusChanged', reply.actionObject.value);
 
-    return toggleBackgroundEffectsResponse.actionObject.value;
+    return reply.actionObject.value;
   }
 
   /**
@@ -680,19 +677,19 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
       return this.mute_mic_status;
     }
 
-    const getMuteMicStatusResponse = await this.wsGet('getMuteMicStatus', {});
-    this.mute_mic_status = getMuteMicStatusResponse.actionObject.value;
-    this.emit('MuteMicStatusChanged', getMuteMicStatusResponse.actionObject.value);
-    return getMuteMicStatusResponse.actionObject.value;
+    const reply = await this.wsGet('getMuteMicStatus', {});
+    this.mute_mic_status = reply.actionObject.value;
+    this.emit('MuteMicStatusChanged', reply.actionObject.value);
+    return reply.actionObject.value;
   }
 
   /**
    * Requests a toggle of the "Mute" button in the app.
    */
   async toggleMuteMic(): Promise<void> {
-    const toggleMuteMicResponse = await this.wsGet('toggleMuteMic', {});
-    this.mute_mic_status = toggleMuteMicResponse.actionObject.value;
-    this.emit('MuteMicStatusChanged', toggleMuteMicResponse.actionObject.value);
+    const reply = await this.wsGet('toggleMuteMic', {});
+    this.mute_mic_status = reply.actionObject.value;
+    this.emit('MuteMicStatusChanged', reply.actionObject.value);
   }
 
   /**
@@ -739,22 +736,22 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
       return this.mute_meme_for_me_status;
     }
 
-    const getMuteMemeForMeStatusResponse = await this.wsGet('getMuteMemeForMeStatus', {});
-    this.mute_meme_for_me_status = getMuteMemeForMeStatusResponse.actionObject.value;
-    this.emit('MuteMemeForMeStatusChanged', getMuteMemeForMeStatusResponse.actionObject.value);
+    const reply = await this.wsGet('getMuteMemeForMeStatus', {});
+    this.mute_meme_for_me_status = reply.actionObject.value;
+    this.emit('MuteMemeForMeStatusChanged', reply.actionObject.value);
 
-    return getMuteMemeForMeStatusResponse.actionObject.value;
+    return reply.actionObject.value;
   }
 
   /**
    * Requests a toggle of the "Mute for me" button in the app (Soundboard menu).
    */
   async toggleMuteMemeForMe(): Promise<boolean> {
-    const toggleMuteMemeForMeResponse = await this.wsGet('toggleMuteMemeForMe', {});
-    this.mute_meme_for_me_status = toggleMuteMemeForMeResponse.actionObject.value;
-    this.emit('MuteMemeForMeStatusChanged', toggleMuteMemeForMeResponse.actionObject.value);
+    const reply = await this.wsGet('toggleMuteMemeForMe', {});
+    this.mute_meme_for_me_status = reply.actionObject.value;
+    this.emit('MuteMemeForMeStatusChanged', reply.actionObject.value);
 
-    return toggleMuteMemeForMeResponse.actionObject.value;
+    return reply.actionObject.value;
   }
 
   /**
@@ -767,11 +764,11 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
     parameterName: string,
     parameterValue: VoiceParameterValue,
   ): Promise<void> {
-    const setCurrentVoiceParameterResponse = await this.wsGet('setCurrentVoiceParameter', {
+    const reply = await this.wsGet('setCurrentVoiceParameter', {
       parameterName: parameterName,
       parameterValue: parameterValue,
     });
-    this.emit('VoiceParameterChanged', setCurrentVoiceParameterResponse.actionObject);
+    this.emit('VoiceParameterChanged', reply.actionObject);
   }
 
   /**
