@@ -380,26 +380,28 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    * @returns Promise<VoicemodRegisterClientResponse>
    * @private
    */
-  private registerClient(clientKey: string): Promise<RegisterClientResponse> {
-    return this.wsGet('registerClient', {
-      clientKey: clientKey,
-    })
-      .then((register_response: RegisterClientResponse) => {
-        if (register_response && parseInt(register_response.payload.status.code) === 200) {
-          this.connected = true;
-          this.emit('ClientRegistered', register_response);
-          return register_response;
-        } else {
-          this.onDisconnect();
-          this.emit('ClientRegistrationFailed');
-          return register_response;
-        }
-      })
-      .catch((error) => {
+  private async registerClient(clientKey: string): Promise<RegisterClientResponse> {
+    try {
+      const registerResponse = await this.wsGet('registerClient', {
+        clientKey: clientKey
+      });
+
+      if (registerResponse && parseInt(registerResponse.payload.status.code) === 200) {
+        this.connected = true;
+        this.emit('ClientRegistered', registerResponse);
+
+      } else {
         this.onDisconnect();
         this.emit('ClientRegistrationFailed');
-        throw new Error("Couldn't register client");
-      });
+      }
+
+      return registerResponse;
+
+    } catch {
+      this.onDisconnect();
+      this.emit('ClientRegistrationFailed');
+      throw new Error("Couldn't register client");
+    }
   }
 
   /**
