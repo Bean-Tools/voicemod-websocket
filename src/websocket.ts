@@ -409,17 +409,15 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    *
    * @returns Promise<string>
    */
-  getUser(): Promise<string> {
+  async getUser(): Promise<string> {
     if (this.user !== null) {
-      return Promise.resolve(this.user);
+      return this.user;
     }
 
-    return this.wsGet('getUser', {}).then((user: ResponseGetUser) => {
-      this.user = user.actionObject.userId;
-      this.emit('UserChanged', user.actionObject.userId);
-
-      return user.actionObject.userId;
-    });
+    const userResponse = await this.wsGet('getUser', {});
+    this.user = userResponse.actionObject.userId;
+    this.emit('UserChanged', userResponse.actionObject.userId);
+    return userResponse.actionObject.userId;
   }
 
   /**
