@@ -132,6 +132,8 @@ dist
 # Project specific files
 src/test/config.ts
 src/test/config.js
+test/config.ts
+test/config.js
 
 src/**/*.d.ts
 src/**/*.js
