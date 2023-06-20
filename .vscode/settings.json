@@ -1,0 +1,9 @@
+{
+  "editor.defaultFormatter": "dbaeumer.vscode-eslint",
+  "[javascript]": {
+    "editor.defaultFormatter": "dbaeumer.vscode-eslint",
+    "files.trimTrailingWhitespace": true,
+    "files.eol": "\n"
+  },
+  "editor.formatOnSave": true
+}
