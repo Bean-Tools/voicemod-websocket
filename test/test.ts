@@ -1,9 +1,19 @@
-import { exit } from 'process';
+import { exit, env } from 'process';
 import { Soundboard, Voice } from '../src/types';
 import VoicemodWebsocket from '../src/websocket';
 
 let config;
-import('./config')
+let config_file: string;
+
+if (env.NODE_ENV === 'production') {
+  console.warn("You're not running in development mode");
+  console.warn('Please create a config.ts file in the test directory, see config.ts.example');
+  exit(1);
+} else {
+  config_file = './config.ts';
+}
+
+import(config_file)
   .then((c) => {
     if (!c.config) {
       console.error('Please create a config.ts file in the test directory, see config.ts.example');
@@ -106,6 +116,7 @@ import('./config')
   })
   .catch((err) => {
     console.error('Could not load config.ts');
+
     console.error(err);
     exit(1);
   });

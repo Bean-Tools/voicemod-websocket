@@ -7,7 +7,7 @@
   ],
   "exclude": [
     "node_modules",
-    "src/test/"
+    "./test/"
   ],
   "exports": {
     "voicemod-websocket/": "./src/"
