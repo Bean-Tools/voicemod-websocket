@@ -11,15 +11,15 @@
   ],
   "exports": {
     ".": {
-      "import": "./dist/src/websocket.js",
-      "require": "./dist/src/websocket.js"
+      "import": "./outDir/src/websocket.js",
+      "require": "./outDir/src/websocket.js"
     }
   },
   "files": [
-    "dist/**/*"
+    "outDir/**/*"
   ],
-  "typings": "./dist/src/websocket.d.ts",
-  "types": "./dist/src/websocket.d.ts",
+  "typings": "./outDir/src/websocket.d.ts",
+  "types": "./outDir/src/websocket.d.ts",
   "homepage": "https://github.com/Bean-Tools/voicemod-websocket",
   "repository": "https://github.com/Bean-Tools/voicemod-websocket.git",
   "bugs": "https://github.com/Bean-Tools/voicemod-websocket/issues",
