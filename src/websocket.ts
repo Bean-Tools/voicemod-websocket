@@ -565,7 +565,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    */
   async toggleHearMyVoice(state: boolean): Promise<boolean> {
     return this.wsGet(
-      'toggleHearMyVoid',
+      'toggleHearMyVoice',
       { value: state },
       {
         walk: true,
