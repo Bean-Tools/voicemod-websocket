@@ -57,11 +57,13 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
 
   private internalEvents = new EventEmitter();
 
-  private connected: boolean;
+  private connected: boolean = false;
 
   private ws: WebSocket | null = null;
 
   private voicemodState: VoiceState = {};
+
+  private forceDisconnect: boolean = false;
 
   constructor(host: string, clientKey: string, reconnect = true, timeout = 5000) {
     super();
@@ -72,8 +74,6 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
       reconnect,
       timeout,
     };
-
-    this.connected = false;
   }
 
   /**
@@ -87,14 +87,23 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
       return;
     }
 
-    const port = await getVoicemodPort(this.options.host);
+    const port = await getVoicemodPort(this.options.host)
+      .then((port) => {
+        this.ws = new WebSocket(`ws://${this.options.host}:${port}/v1`);
 
-    this.ws = new WebSocket(`ws://${this.options.host}:${port}/v1`);
-
-    this.ws.onmessage = this.onMessage.bind(this);
-    this.ws.onclose = this.onClose.bind(this);
-    this.ws.onerror = this.onError.bind(this);
-    this.ws.onopen = this.onOpen.bind(this);
+        this.ws.onmessage = this.onMessage.bind(this);
+        this.ws.onclose = this.onClose.bind(this);
+        this.ws.onerror = this.onError.bind(this);
+        this.ws.onopen = this.onOpen.bind(this);
+      })
+      .catch(() => {
+        if (this.options.reconnect && this.forceDisconnect !== true) {
+          setTimeout(() => {
+            this.emit('ConnectionRetry');
+            this.connect();
+          }, this.options.timeout);
+        }
+      });
   }
 
   /**
@@ -102,6 +111,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    */
   disconnect(): void {
     if (this.connected !== false && this.ws !== null) {
+      this.forceDisconnect = true;
       this.ws.close();
       this.internalEvents.removeAllListeners();
 
@@ -172,8 +182,6 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
       } else if (data.action === 'badLanguageDisabledEvent') {
         this.emit('BadLanguageStatusChanged', false);
       } else {
-        // TODO: Handle errrors more gracefully
-        console.error('Unknown message: ', data);
         throw new Error(
           'Unknown event: ' + data.action ||
             data.actionID + ' If you see this, please report it to the developer.',
@@ -186,12 +194,9 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
         this.emit('SoundboardListChanged', data.actionObject.soundboards);
       }
     } else {
-      // TODO: Handle errrors more gracefully
-      console.error(
-        'Unknown message: ',
-        data + ' If you see this, please report it to the developer.',
+      throw new Error(
+        'Unknown message: ' + JSON.stringify(data.action) || JSON.stringify(data.actionID),
       );
-      throw new Error('Unknown message: ' + data.action || data.actionID);
     }
   }
 
@@ -295,10 +300,12 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
     this.ws = null;
     this.connected = false;
 
-    if (this.options.reconnect) {
-      setTimeout(() => {
-        this.connect();
-      }, this.options.timeout || 5000);
+    if (this.options.reconnect && this.forceDisconnect !== true) {
+      // First retry immediately, then let the retry logic inside connect()
+      // handle the rest. We still emit the event here so it's clear that
+      // the connection was lost and we are retrying.
+      this.emit('ConnectionRetry');
+      this.connect();
     }
   }
 

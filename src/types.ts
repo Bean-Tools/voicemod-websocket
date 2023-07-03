@@ -148,12 +148,7 @@ export type ResponseGetActiveSoundboard = {
   };
 };
 
-export type MemeType =
-  | 'PlayRestart'
-  | 'PlayPause'
-  | 'PlayStop'
-  | 'PlayOverlap'
-  | 'PlayLoopOnPress';
+export type MemeType = 'PlayRestart' | 'PlayPause' | 'PlayStop' | 'PlayOverlap' | 'PlayLoopOnPress';
 
 export type Meme = {
   Name: string;
@@ -221,6 +216,7 @@ export type EventTypes = {
 
   ConnectionOpened: void;
   ConnectionClosed: void;
+  ConnectionRetry: void;
   ConnectionError: WSErrorEvent;
   Connected: void;
   Disconnected: void;
@@ -247,11 +243,7 @@ export type EventTypes = {
   BadLanguageStatusChanged: boolean;
 };
 
-export type SelectVoiceMode =
-  | 'AllVoices'
-  | 'FreeVoices'
-  | 'FavoriteVoices'
-  | 'CustomVoices';
+export type SelectVoiceMode = 'AllVoices' | 'FreeVoices' | 'FavoriteVoices' | 'CustomVoices';
 
 export type VoiceState = {
   voiceList?: Voice[];
@@ -270,4 +262,4 @@ export type VoiceState = {
   backgroundEffectsStatus?: boolean;
   muteMemeForMeStatus?: boolean;
   muteMicStatus?: boolean;
-}
+};

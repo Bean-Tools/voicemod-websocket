@@ -1,6 +1,6 @@
 {
   "name": "voicemod-websocket",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Websocket implementation for the Voicemod Control API",
   "include": [
     "src"
