@@ -1,30 +1,23 @@
 {
   "name": "@bean-tools/voicemod-websocket",
-  "version": "0.1.4",
+  "version": "0.2.0",
   "description": "Websocket implementation for the Voicemod Control API",
-  "include": [
-    "src"
-  ],
-  "exclude": [
-    "node_modules",
-    "./test/"
-  ],
   "exports": {
     ".": {
-      "import": "./outDir/src/websocket.js",
-      "require": "./outDir/src/websocket.js"
+      "import": "./lib/websocket.js",
+      "require": "./lib/websocket.js",
+      "types": "./lib/websocket.d.ts"
     },
     "./types": {
-      "import": "./outDir/src/types.d.ts",
-      "require": "./outDir/src/types.d.ts"
+      "types": "./lib/types.d.ts"
     }
   },
+  "types": "./lib/websocket.d.ts",
   "files": [
-    "outDir/",
+    "lib/",
     "LICENSE",
     "package.json"
   ],
-  "types": "./outDir/src/websocket.d.ts",
   "homepage": "https://github.com/Bean-Tools/voicemod-websocket",
   "repository": "https://github.com/Bean-Tools/voicemod-websocket.git",
   "bugs": "https://github.com/Bean-Tools/voicemod-websocket/issues",
