@@ -105,6 +105,10 @@ import(config_file)
       });
     });
 
+    voicemod.on('ConnectionRetry', () => {
+      console.log('VM.on(ConnectionRetry)');
+    });
+
     voicemod
       .connect()
       .then(() => {

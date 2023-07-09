@@ -53,6 +53,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
     clientKey: string;
     reconnect: boolean;
     timeout: number;
+    maxRetries: number;
   };
 
   private internalEvents = new EventEmitter();
@@ -65,7 +66,9 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
 
   private forceDisconnect: boolean = false;
 
-  constructor(host: string, clientKey: string, reconnect = true, timeout = 5000) {
+  private currentRetry: number = 1;
+
+  constructor(host: string, clientKey: string, reconnect = true, timeout = 1000, maxRetries = 5) {
     super();
 
     this.options = {
@@ -73,6 +76,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
       clientKey,
       reconnect,
       timeout,
+      maxRetries: maxRetries,
     };
   }
 
@@ -87,7 +91,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
       return;
     }
 
-    const port = await getVoicemodPort(this.options.host)
+    return await getVoicemodPort(this.options.host)
       .then((port) => {
         this.ws = new WebSocket(`ws://${this.options.host}:${port}/v1`);
 
@@ -96,12 +100,21 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
         this.ws.onerror = this.onError.bind(this);
         this.ws.onopen = this.onOpen.bind(this);
       })
-      .catch(() => {
+      .catch((e) => {
         if (this.options.reconnect && this.forceDisconnect !== true) {
+          if (this.currentRetry >= this.options.maxRetries) {
+            this.emit('ConnectionError', e);
+            throw new Error('Could not connect to Voicemod API');
+          }
+
+          this.currentRetry = this.currentRetry + 1;
+
           setTimeout(() => {
             this.emit('ConnectionRetry');
             this.connect();
           }, this.options.timeout);
+        } else {
+          this.emit('ConnectionError', e);
         }
       });
   }
@@ -327,6 +340,8 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
         this.onDisconnect();
         this.emit('ClientRegistrationFailed');
       }
+
+      this.currentRetry = 0;
 
       return reply;
     } catch {
