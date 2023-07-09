@@ -1,6 +1,7 @@
 # voicemod-websocket
 
-TypeScript Websocket Class for Voicemod's Control API.
+TypeScript Websocket Class for Voicemod's Control API. For an overview of the Control API,
+check out the [Control API documentation](https://control-api.voicemod.net/api-reference/).
 
 ## Quickstart
 
@@ -9,6 +10,8 @@ You will need an API key and a running Voicemod.
 To create a connection, run:
 
 ```js
+import { VoicemodwebSocket } from "@bean-tools/voicemod-websocket";
+
 const voicemod = new VoicemodWebSocket();
 voicemod.connect("localhost", "aaaaaa-123456");
 
