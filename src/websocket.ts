@@ -102,7 +102,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
       })
       .catch((e) => {
         if (this.options.reconnect && this.forceDisconnect !== true) {
-          if (this.currentRetry >= this.options.maxRetries) {
+          if (this.options.maxRetries !== 0 && this.currentRetry >= this.options.maxRetries) {
             this.emit('ConnectionError', e);
             throw new Error('Could not connect to Voicemod API');
           }

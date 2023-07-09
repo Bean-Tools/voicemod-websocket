@@ -22,7 +22,7 @@ import(config_file)
 
     config = c.config;
 
-    const voicemod = new VoicemodWebsocket('127.0.0.1', config.client_key);
+    const voicemod = new VoicemodWebsocket('127.0.0.1', config.client_key, true, 500, 50);
 
     // This one logs *everything* that comes from the websocket
     // Usefull to see what's going on e.g. if something isn't working
