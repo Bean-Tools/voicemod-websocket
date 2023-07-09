@@ -40,7 +40,7 @@ import getVoicemodPort from './util/get-voicemod-port';
  *
  * @example
  * const voicemod = new VoicemodWebSocket();
- * voicemod.connect("localhost", "aaaaaa-123456");
+ * voicemod.connect("localhost", "aaaaaa-123456", true, 500, 50);
  *
  * voicemod.on("VoiceChanged", (voice: VoicemodVoice) => {
  *  console.log("Voice changed to", voice.friendlyName);
@@ -68,7 +68,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
 
   private currentRetry: number = 1;
 
-  constructor(host: string, clientKey: string, reconnect = true, timeout = 1000, maxRetries = 5) {
+  constructor(host: string, clientKey: string, reconnect = false, timeout = 1000, maxRetries = 5) {
     super();
 
     this.options = {

@@ -139,3 +139,5 @@ src/**/*.d.ts
 src/**/*.js
 test/*.d.ts
 test/*.js
+
+outDir/
