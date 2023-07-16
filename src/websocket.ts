@@ -740,11 +740,9 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    * @param isKeyDown True if sending a KeyDown action
    */
   async playMeme(filename: string, isKeyDown: boolean = true): Promise<void> {
-    await this.wsGet('playMeme', {
-      payload: {
-        filename: filename,
-        isKeyDown: isKeyDown,
-      },
+    return this.wsGet('playMeme', {
+      FileName: filename,
+      IsKeyDown: isKeyDown,
     });
   }
 
