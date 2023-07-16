@@ -55,7 +55,23 @@ import(config_file)
       console.log('VM.on(VoiceChangerStatusChanged)::: ', status);
     });
 
-    voicemod.on('ClientRegistered', () => {
+    voicemod.on('ClientRegistered', async () => {
+      let status = voicemod.getBadLanguageStatus();
+      console.log('Bad language status', status);
+
+      voicemod.on('BadLanguageStatusChanged', (status) => {
+        console.log('VM.on(BadLanguageStatusChanged)::: ', status);
+      });
+
+      voicemod.setBeepSound(true);
+
+      status = voicemod.getBadLanguageStatus();
+      console.log('Bad language status', status);
+
+      setTimeout(() => {
+        voicemod.setBeepSound(false);
+      }, 1000);
+
       voicemod.getVoices().then((voices) => {
         console.log(`Found ${voices.length} voices`);
 

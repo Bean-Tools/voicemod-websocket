@@ -191,8 +191,10 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
       } else if (data.action === 'voiceLoadedEvent') {
         this.onVoiceChange(data.actionObject.voiceID);
       } else if (data.action === 'badLanguageEnabledEvent') {
+        this.voicemodState.badLanguageStatus = true;
         this.emit('BadLanguageStatusChanged', true);
       } else if (data.action === 'badLanguageDisabledEvent') {
+        this.voicemodState.badLanguageStatus = false;
         this.emit('BadLanguageStatusChanged', false);
       } else {
         throw new Error(
@@ -703,16 +705,32 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
 
   /**
    * Requests a state change of the "beep" sound that is normally actioned by the user to censor
-   * something he or she is saying.
+   * something they are saying.
    *
    * @param state The new status of the button
    */
   async setBeepSound(state: boolean): Promise<void> {
-    await this.wsGet('setBeepSound', {
-      payload: {
-        badLanguage: state === true ? 1 : 0,
-      },
+    // This cannot be awaited - the API does not return the event response
+    // with the appropriate ID
+    this.wsGet('setBeepSound', {
+      badLanguage: state === true ? '1' : '0',
     });
+    return;
+  }
+
+  /**
+   * Requests the current state of the "Bad Language" button in the app.
+   * This button is used to enable or disable the beep sound that is normally actioned
+   * by the user to censor something they are saying.
+   *
+   * If the beep sound hasn't been changed during the runtime of the socket,
+   * this will return false. This is because there is no way to get the current
+   * state of the beep sound from the API.
+   *
+   * @returns boolean
+   */
+  getBadLanguageStatus(): boolean {
+    return this.voicemodState.badLanguageStatus ?? false;
   }
 
   /**

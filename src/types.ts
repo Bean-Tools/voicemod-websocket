@@ -246,6 +246,7 @@ export type EventTypes = {
 export type SelectVoiceMode = 'AllVoices' | 'FreeVoices' | 'FavoriteVoices' | 'CustomVoices';
 
 export type VoiceState = {
+  badLanguageStatus?: boolean;
   voiceList?: Voice[];
   currentVoice?: string;
 
