@@ -152,9 +152,17 @@ export type MemeType = 'PlayRestart' | 'PlayPause' | 'PlayStop' | 'PlayOverlap' 
 
 export type Meme = {
   Name: string;
+  name: string;
   FileName: string;
+  fileName: string;
   Type: MemeType;
+  type: MemeType;
   Image: string;
+  image: string;
+  Profile: string;
+  profile: string;
+  IsCore: boolean;
+  isCore: boolean;
 };
 
 export type ResponseGetMemes = {
