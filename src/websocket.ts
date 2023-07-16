@@ -501,7 +501,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
       'getMemes',
       {},
       {
-        walk: 'memes',
+        walk: 'listOfMemes',
         storeAs: 'memes',
         emit: 'MemeListChanged',
       },
