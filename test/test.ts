@@ -70,7 +70,15 @@ import(config_file)
 
       setTimeout(() => {
         voicemod.setBeepSound(false);
-      }, 1000);
+      }, 200);
+
+      voicemod.playMeme('38e80aaa-b4cd-40f5-be9d-32dbaa7ff23c');
+
+      setTimeout(() => {
+        voicemod.stopMemes();
+        voicemod.disconnect();
+        exit(0);
+      }, 2000);
 
       voicemod.getVoices().then((voices) => {
         console.log(`Found ${voices.length} voices`);

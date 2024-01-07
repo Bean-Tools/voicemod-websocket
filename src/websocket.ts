@@ -54,6 +54,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
     reconnect: boolean;
     timeout: number;
     maxRetries: number;
+    maxLockTime: number;
   };
 
   private internalEvents = new EventEmitter();
@@ -68,15 +69,49 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
 
   private currentRetry: number = 1;
 
-  constructor(host: string, clientKey: string, reconnect = false, timeout = 1000, maxRetries = 5) {
+  /**
+   * If true locks all websocket writes.
+   *
+   * When VoiceMod is setting a voice it ignores all other inputs in UI and in the websocket.
+   * To get around this limitation and not lose any instructions we have this lock.
+   * The lock is limited by options.maxLockTime as to not deadlock the websocket as a whole
+   * in case of something unexpected happening.
+   */
+  private globalLock: false | number = false;
+
+  private lockingActions: string[] = [
+    'loadVoice',
+    'setCurrentVoiceParameter',
+    'setRandomVoice',
+    'toggleBackgroundEffects',
+    'toggleHearMyVoice',
+    'toggleMuteMemeForMe',
+    'toggleMuteMic',
+    'toggleVoiceChanger',
+  ];
+
+  constructor(
+    host: string,
+    clientKey: string,
+    reconnect = false,
+    timeout = 1000,
+    maxRetries = 5,
+    enableLock = true,
+    maxLockTime = 60000,
+  ) {
     super();
+
+    if (enableLock !== true) {
+      maxLockTime = 0;
+    }
 
     this.options = {
       host,
       clientKey,
       reconnect,
       timeout,
-      maxRetries: maxRetries,
+      maxRetries,
+      maxLockTime,
     };
   }
 
@@ -240,6 +275,27 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
   }
 
   /**
+   * Just.. Look away. See the reason why we need this on this.globalLock
+   *
+   * @returns boolean
+   */
+  private async waitForLock(): Promise<boolean> {
+    function sleep(ms: number) {
+      return new Promise((resolve) => {
+        setTimeout(resolve, ms);
+      });
+    }
+
+    await sleep(Math.random() * 50);
+
+    while (this.globalLock !== false && Number(this.globalLock) >= Date.now()) {
+      await sleep(50);
+    }
+
+    return true;
+  }
+
+  /**
    * Sends a message to the Voicemod API WebSocket and waits for a response
    *
    * @param action The name of the action
@@ -256,9 +312,15 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
       walk?: boolean | string;
       storeAs?: keyof VoiceState;
       emit?: keyof EventTypes;
+      lock?: boolean;
     } = {},
   ): Promise<any> {
     try {
+      if (this.lockingActions.includes(action)) {
+        await this.waitForLock();
+        this.enableLock();
+      }
+
       let result: any = await this.internalEvent(this.wsSendMessage(action, payload));
 
       if (settings.walk) {
@@ -549,7 +611,12 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
       };
     }
 
-    await this.wsGet('loadVoice', payload);
+    this.once('VoiceChanged', (v) => {
+      this.disableLock();
+    });
+
+    await this.wsGet('loadVoice', payload, { lock: true });
+
     return this.onVoiceChange(voiceID);
   }
   setVoice = this.loadVoice;
@@ -560,6 +627,10 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    * @param mode Mode to use when selecting a voice
    */
   async selectRandomVoice(mode: SelectVoiceMode | null = null): Promise<void> {
+    this.once('VoiceChanged', () => {
+      this.disableLock();
+    });
+
     await this.wsGet('selectRandomVoice', { mode: mode });
   }
 
@@ -588,6 +659,10 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    * @param state The new status of the button
    */
   async toggleHearMyVoice(state: boolean): Promise<boolean> {
+    this.once('HearMyselfStatusChanged', () => {
+      this.disableLock();
+    });
+
     return this.wsGet(
       'toggleHearMyVoice',
       { value: state },
@@ -595,6 +670,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
         walk: true,
         storeAs: 'hearMyselfStatus',
         emit: 'HearMyselfStatusChanged',
+        lock: true,
       },
     );
   }
@@ -624,6 +700,10 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    * @param state The new status of the button
    */
   async toggleVoiceChanger(state: boolean): Promise<boolean> {
+    this.once('VoiceChangerStatusChanged', () => {
+      this.disableLock();
+    });
+
     return this.wsGet(
       'toggleVoiceChanger',
       { value: state },
@@ -631,6 +711,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
         walk: true,
         storeAs: 'voiceChangerStatus',
         emit: 'VoiceChangerStatusChanged',
+        lock: true,
       },
     );
   }
@@ -658,6 +739,10 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    * Requests a toggle of the "Background Effects" button in the app.
    */
   async toggleBackgroundEffects(): Promise<boolean> {
+    this.once('BackgroundEffectStatusChanged', () => {
+      this.disableLock();
+    });
+
     return this.wsGet(
       'toggleBackgroundEffects',
       {},
@@ -692,6 +777,10 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    * Requests a toggle of the "Mute" button in the app.
    */
   async toggleMuteMic(): Promise<void> {
+    this.once('MuteMicStatusChanged', () => {
+      this.disableLock();
+    });
+
     return this.wsGet(
       'toggleMuteMic',
       {},
@@ -776,6 +865,10 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    * Requests a toggle of the "Mute for me" button in the app (Soundboard menu).
    */
   async toggleMuteMemeForMe(): Promise<boolean> {
+    this.once('MuteMemeForMeStatusChanged', () => {
+      this.disableLock();
+    });
+
     return this.wsGet(
       'toggleMuteMemeForMe',
       {},
@@ -797,6 +890,10 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
     parameterName: string,
     parameterValue: VoiceParameterValue,
   ): Promise<void> {
+    this.once('VoiceParameterChanged', () => {
+      this.disableLock();
+    });
+
     const reply = await this.wsGet('setCurrentVoiceParameter', {
       parameterName: parameterName,
       parameterValue: parameterValue,
@@ -842,5 +939,15 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
     this.voicemodState.soundboards = soundboards;
 
     return soundboards.filter((soundboard) => soundboard.id === id)[0];
+  }
+
+  private async enableLock() {
+    if (this.options.maxLockTime !== 0) {
+      this.globalLock = Date.now() + this.options.maxLockTime;
+    }
+  }
+
+  private async disableLock() {
+    this.globalLock = false;
   }
 }
