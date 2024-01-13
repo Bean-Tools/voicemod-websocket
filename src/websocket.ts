@@ -211,10 +211,16 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
       } else if (data.action === 'hearMySelfDisabledEvent') {
         this.voicemodState.hearMyselfStatus = false;
         this.emit('HearMyselfStatusChanged', false);
-      } else if (data.action === 'muteMicEnabledEvent') {
+      } else if (
+        data.action === 'muteMicEnabledEvent' ||
+        data.action === 'muteMicrophoneEnabledEvent'
+      ) {
         this.voicemodState.muteMicStatus = true;
         this.emit('MuteMicStatusChanged', true);
-      } else if (data.action === 'muteMicDisabledEvent') {
+      } else if (
+        data.action === 'muteMicDisabledEvent' ||
+        data.action === 'muteMicrophoneDisabledEvent'
+      ) {
         this.voicemodState.muteMicStatus = false;
         this.emit('MuteMicStatusChanged', false);
       } else if (data.action === 'muteMemeForMeEnabledEvent') {
