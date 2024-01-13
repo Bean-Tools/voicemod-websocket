@@ -322,9 +322,9 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
     } = {},
   ): Promise<any> {
     try {
-      if (this.lockingActions.includes(action)) {
+      if (this.lockingActions.includes(action) && this.options.maxLockTime !== 0) {
         await this.waitForLock();
-        this.enableLock();
+        this.globalLock = Date.now() + this.options.maxLockTime;
       }
 
       let result: any = await this.internalEvent(this.wsSendMessage(action, payload));
@@ -945,12 +945,6 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
     this.voicemodState.soundboards = soundboards;
 
     return soundboards.filter((soundboard) => soundboard.id === id)[0];
-  }
-
-  private async enableLock() {
-    if (this.options.maxLockTime !== 0) {
-      this.globalLock = Date.now() + this.options.maxLockTime;
-    }
   }
 
   private async disableLock() {
