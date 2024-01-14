@@ -83,6 +83,7 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
     'loadVoice',
     'setCurrentVoiceParameter',
     'setRandomVoice',
+    'setBeepSound',
     'toggleBackgroundEffects',
     'toggleHearMyVoice',
     'toggleMuteMemeForMe',
@@ -747,6 +748,14 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
   async toggleBackgroundEffects(): Promise<boolean> {
     this.once('BackgroundEffectStatusChanged', () => {
       this.disableLock();
+      this.removeListener('commandNotFound', undefined, undefined, true);
+    });
+
+    // When a voice does not have a background effect
+    // this is another possible
+    this.once('commandNotFound', () => {
+      this.removeListener('BackgroundEffectStatusChanged', undefined, undefined, true);
+      this.disableLock();
     });
 
     return this.wsGet(
@@ -805,11 +814,19 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
    * @param state The new status of the button
    */
   async setBeepSound(state: boolean): Promise<void> {
-    // This cannot be awaited - the API does not return the event response
-    // with the appropriate ID
-    this.wsGet('setBeepSound', {
-      badLanguage: state === true ? '1' : '0',
+    this.once('BadLanguageStatusChanged', () => {
+      this.disableLock();
     });
+
+    this.wsGet(
+      'setBeepSound',
+      {
+        badLanguage: state === true ? '1' : '0',
+      },
+      {
+        emit: 'BadLanguageStatusChanged',
+      },
+    );
     return;
   }
 
@@ -947,6 +964,9 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
     return soundboards.filter((soundboard) => soundboard.id === id)[0];
   }
 
+  /**
+   * Disables the internal write lock towards the VM websocket
+   */
   private async disableLock() {
     this.globalLock = false;
   }

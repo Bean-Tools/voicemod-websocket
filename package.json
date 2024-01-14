@@ -1,6 +1,6 @@
 {
   "name": "@bean-tools/voicemod-websocket",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Websocket implementation for the Voicemod Control API",
   "exports": {
     ".": {

@@ -82,6 +82,19 @@ export type RegisterClientResponse = {
   };
 };
 
+// This is a best guess at what this response looks like
+// It is currently undocumented by the developer
+export type CommandNotFoundResponse = {
+  actionType: 'commandNotFound';
+  appVersion: string;
+  actionId?: string;
+  actionID?: string;
+  context: string;
+  actionObject: {
+    commandNotFound: 'true';
+    commandName: string;
+  };
+};
 export type MessageRequest = {
   action: string;
   id: string;
@@ -228,6 +241,8 @@ export type EventTypes = {
   ConnectionError: WSErrorEvent;
   Connected: void;
   Disconnected: void;
+
+  commandNotFound: CommandNotFoundResponse;
 
   ClientRegistered: RegisterClientResponse;
   ClientRegistrationFailed: void;

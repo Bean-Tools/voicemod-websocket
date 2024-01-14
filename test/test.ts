@@ -22,7 +22,15 @@ import(config_file)
 
     config = c.config;
 
-    const voicemod = new VoicemodWebsocket('127.0.0.1', config.client_key, true, 500, 50);
+    const voicemod = new VoicemodWebsocket(
+      '127.0.0.1',
+      config.client_key,
+      true,
+      500,
+      50,
+      true,
+      5000,
+    );
 
     // This one logs *everything* that comes from the websocket
     // Usefull to see what's going on e.g. if something isn't working
@@ -48,7 +56,11 @@ import(config_file)
     });
 
     voicemod.on('VoiceChanged', (voice: Voice) => {
-      console.log('VM.on(VoiceChanged):::      ', voice.friendlyName || voice.id);
+      if (voice) {
+        console.log('VM.on(VoiceChanged):::      ', voice.friendlyName || voice.id);
+      } else {
+        console.log('unknown voice', voice);
+      }
     });
 
     voicemod.on('VoiceChangerStatusChanged', (status) => {
@@ -76,8 +88,15 @@ import(config_file)
 
       setTimeout(() => {
         voicemod.stopMemes();
-        voicemod.disconnect();
-        exit(0);
+
+        console.log('Setting voice without BG effect');
+        voicemod.setVoice('Helium').then(() => {
+          console.log('Trying to toggle BG effect');
+          voicemod.toggleBackgroundEffects();
+        });
+
+        //voicemod.disconnect();
+        //exit(0);
       }, 2000);
 
       voicemod.getVoices().then((voices) => {
