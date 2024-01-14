@@ -748,18 +748,10 @@ export default class VoicemodWebsocket extends EventEmitter<MapValueToArgsArray<
   async toggleBackgroundEffects(): Promise<boolean> {
     this.once('BackgroundEffectStatusChanged', () => {
       this.disableLock();
-      this.removeListener('commandNotFound', undefined, undefined, true);
-    });
-
-    // When a voice does not have a background effect
-    // this is another possible
-    this.once('commandNotFound', () => {
-      this.removeListener('BackgroundEffectStatusChanged', undefined, undefined, true);
-      this.disableLock();
     });
 
     return this.wsGet(
-      'toggleBackgroundEffects',
+      'toggleBackground',
       {},
       {
         walk: true,
